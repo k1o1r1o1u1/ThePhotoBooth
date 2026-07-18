@@ -53,7 +53,7 @@ Before you start, make sure you have:
 3. Install the required packages:
 
    ```bash
-   pip install Flask pillow opencv-python
+   pip install Flask pillow opencv-python cryptography
    ```
 
 4. Optional: if you want to enable Imgur uploads, install:
@@ -70,10 +70,16 @@ Start the Flask web app:
 python app.py
 ```
 
+To start the app with ad-hoc SSL (HTTPS) enabled, which is often required for webcam access on some modern browsers:
+
+```bash
+python app.py --ssl
+```
+
 Then open one of these URLs in your browser:
 
-- Kiosk: http://localhost:5000/
-- Admin panel: http://localhost:5000/admin
+- Kiosk: http://localhost:5000/ (or https://localhost:5000/ if using --ssl)
+- Admin panel: http://localhost:5000/admin (or https://localhost:5000/admin if using --ssl)
 
 ## Using the app
 
@@ -124,7 +130,15 @@ Captured images are stored in the static/photos folder, organized by customer na
 If you get import errors, reinstall dependencies:
 
 ```bash
-pip install --upgrade Flask pillow opencv-python
+pip install --upgrade Flask pillow opencv-python cryptography
+```
+
+### SSL/Cryptography Error
+
+If you run the app with `--ssl` and get a `TypeError` related to ad-hoc certificates, ensure the `cryptography` library is installed:
+
+```bash
+pip install cryptography
 ```
 
 ### Port already in use

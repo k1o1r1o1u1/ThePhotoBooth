@@ -5,3 +5,4 @@
 .flask_secret
 transparent logo .png
 static/photos/
+.venv
