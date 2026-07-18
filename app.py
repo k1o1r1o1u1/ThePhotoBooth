@@ -1,0 +1,335 @@
+import os
+import re
+import time
+import base64
+from datetime import timedelta
+from flask import Flask, request, jsonify, render_template, session
+from PIL import Image, ImageOps
+from io import BytesIO
+
+app = Flask(__name__)
+# Secure secret key for session management – persists across restarts
+# so that existing client session cookies remain valid.
+_secret_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.flask_secret')
+if os.path.exists(_secret_path):
+    with open(_secret_path, 'rb') as _f:
+        app.secret_key = _f.read()
+else:
+    app.secret_key = os.urandom(24)
+    with open(_secret_path, 'wb') as _f:
+        _f.write(app.secret_key)
+# Idle timeout (e.g., 2 minutes)
+app.permanent_session_lifetime = timedelta(minutes=2)
+
+# Ensure static/photos directory exists
+PHOTOS_DIR = os.path.join(app.static_folder, 'photos') if app.static_folder else os.path.join('static', 'photos')
+os.makedirs(PHOTOS_DIR, exist_ok=True)
+
+def sanitize_filename(name: str) -> str:
+    """Return a filesystem‑safe version of a user supplied name."""
+    cleaned = re.sub(r'[^a-zA-Z0-9\s_-]', '', name).strip()
+    return cleaned.replace(' ', '_')
+
+@app.route('/')
+def kiosk():
+    return render_template('kiosk.html')
+
+@app.route('/admin')
+def admin():
+    return render_template('admin.html')
+
+# ---------------------------------------------------------------------------
+# Session handling – the kiosk start endpoint also acts as a login
+# ---------------------------------------------------------------------------
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+
+@app.route('/api/session/start', methods=['POST'])
+def start_session():
+    data = request.json or {}
+    customer_name = data.get('customer_name', 'Guest').strip() or 'Guest'
+    sanitized_name = sanitize_filename(customer_name)
+    session_dir_name = sanitized_name
+    session_path = os.path.join(PHOTOS_DIR, session_dir_name)
+    os.makedirs(session_path, exist_ok=True)
+    # Store in Flask session for later requests
+    session['customer_name'] = customer_name
+    session['session_dir'] = session_dir_name
+    return jsonify({
+        'session_dir': session_dir_name,
+        'customer_name': customer_name
+    })
+
+# ---------------------------------------------------------------------------
+# Photo upload – accepts images, stores each with a unique timestamp suffix, builds collage
+# ---------------------------------------------------------------------------
+@app.route('/api/session/upload', methods=['POST'])
+def upload_photos():
+    data = request.json or {}
+    # Prefer the session‑stored directory if not explicitly supplied
+    session_dir = data.get('session_dir') or session.get('session_dir')
+    image_data_list = data.get('images', [])
+    if not session_dir or not image_data_list:
+        return jsonify({'error': 'Missing session_dir or images'}), 400
+    session_path = os.path.join(PHOTOS_DIR, session_dir)
+    if not os.path.exists(session_path):
+        return jsonify({'error': 'Session directory not found'}), 404
+    saved_files = []
+    pil_images = []
+    session_timestamp = str(int(time.time()))
+    for idx, img_base64 in enumerate(image_data_list):
+        try:
+            if ',' in img_base64:
+                img_base64 = img_base64.split(',')[1]
+            img_bytes = base64.b64decode(img_base64)
+            img = Image.open(BytesIO(img_bytes)).convert('RGB')
+            # Save individual photo – timestamp ensures uniqueness within user folder
+            filename = f"capture_{session_timestamp}_{idx + 1}.jpg"
+            filepath = os.path.join(session_path, filename)
+            img.save(filepath, 'JPEG', quality=95)
+            saved_files.append(f"/static/photos/{session_dir}/{filename}")
+            pil_images.append(img)
+        except Exception as e:
+            return jsonify({'error': f"Failed to process image {idx + 1}: {str(e)}"}), 500
+    # Build vertical collage
+    collage_url = None
+    if pil_images:
+        try:
+            # Dimensions for 300 DPI
+            # 50mm x 150mm frame
+            frame_w, frame_h = 591, 1772
+            # 43.3mm x 31.8mm photo
+            photo_w, photo_h = 511, 376
+            
+            # Margins
+            left_margin = (frame_w - photo_w) // 2
+            top_margin = left_margin # 40px
+            gutter = 40
+            
+            collage = Image.new('RGB', (frame_w, frame_h), (255, 255, 255))
+            current_y = top_margin
+            
+            for img in pil_images:
+                # Crop/resize photo to exact dimensions
+                scaled_img = ImageOps.fit(img, (photo_w, photo_h), Image.Resampling.LANCZOS)
+                collage.paste(scaled_img, (left_margin, current_y))
+                current_y += photo_h + gutter
+                
+            collage_filename = f"collage_{session_timestamp}.jpg"
+            collage_filepath = os.path.join(session_path, collage_filename)
+            collage.save(collage_filepath, 'JPEG', quality=95)
+            collage_url = f"/static/photos/{session_dir}/{collage_filename}"
+        except Exception as e:
+            return jsonify({'error': f"Failed to build collage: {str(e)}"}), 500
+    return jsonify({
+        'status': 'success',
+        'files': saved_files,
+        'collage_url': collage_url
+    })
+
+# ---------------------------------------------------------------------------
+# Admin – list all sessions
+# ---------------------------------------------------------------------------
+@app.route('/api/admin/sessions', methods=['GET'])
+def get_sessions():
+    try:
+        sessions = []
+        if os.path.exists(PHOTOS_DIR):
+            for folder_name in sorted(os.listdir(PHOTOS_DIR)):
+                folder_path = os.path.join(PHOTOS_DIR, folder_name)
+                if not os.path.isdir(folder_path): continue
+                customer_name = folder_name.replace('_', ' ')
+                
+                sessions_dict = {}
+                for file_name in os.listdir(folder_path):
+                    if not (file_name.endswith('.jpg') or file_name.endswith('.gif')):
+                        continue
+                    
+                    parts = file_name.split('_')
+                    if len(parts) >= 2:
+                        if file_name.startswith('capture_'):
+                            ts = parts[1]
+                        elif file_name.startswith('collage_edited_'):
+                            ts = parts[2].split('.')[0]
+                        elif file_name.startswith('collage_'):
+                            ts = parts[1].split('.')[0]
+                        elif file_name.startswith('animation_'):
+                            ts = parts[1].split('.')[0]
+                        else:
+                            continue
+                            
+                        if ts not in sessions_dict:
+                            try:
+                                formatted_time = time.ctime(int(ts))
+                            except:
+                                formatted_time = ts
+                            sessions_dict[ts] = {
+                                'folder': folder_name,
+                                'customer_name': customer_name,
+                                'timestamp': ts,
+                                'time': formatted_time,
+                                'files': [],
+                                'collage_url': None,
+                                'collage_edited_url': None,
+                                'gif_url': None
+                            }
+                        
+                        file_path = f"/static/photos/{folder_name}/{file_name}"
+                        if file_name.startswith('capture_'):
+                            sessions_dict[ts]['files'].append(file_path)
+                        elif file_name.startswith('collage_edited_'):
+                            sessions_dict[ts]['collage_edited_url'] = file_path
+                        elif file_name.startswith('collage_'):
+                            sessions_dict[ts]['collage_url'] = file_path
+                        elif file_name.startswith('animation_'):
+                            sessions_dict[ts]['gif_url'] = file_path
+                
+                for ts in sessions_dict:
+                    sess = sessions_dict[ts]
+                    sess['files'].sort()
+                    sessions.append(sess)
+        
+        sessions.sort(key=lambda x: x['timestamp'], reverse=True)
+        return jsonify({'sessions': sessions})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ---------------------------------------------------------------------------
+# Customer – retrieve only their own sessions
+# ---------------------------------------------------------------------------
+@app.route('/api/customer/gallery', methods=['GET'])
+def customer_gallery():
+    customer_name = session.get('customer_name')
+    if not customer_name:
+        return jsonify({'error': 'Not logged in'}), 401
+    sessions = []
+    sanitized_name = sanitize_filename(customer_name)
+    folder_path = os.path.join(PHOTOS_DIR, sanitized_name)
+    
+    if os.path.exists(folder_path) and os.path.isdir(folder_path):
+        sessions_dict = {}
+        for file_name in os.listdir(folder_path):
+            if not (file_name.endswith('.jpg') or file_name.endswith('.gif')):
+                continue
+                
+            parts = file_name.split('_')
+            if len(parts) >= 2:
+                if file_name.startswith('capture_'):
+                    ts = parts[1]
+                elif file_name.startswith('collage_edited_'):
+                    ts = parts[2].split('.')[0]
+                elif file_name.startswith('collage_'):
+                    ts = parts[1].split('.')[0]
+                elif file_name.startswith('animation_'):
+                    ts = parts[1].split('.')[0]
+                else:
+                    continue
+                    
+                if ts not in sessions_dict:
+                    sessions_dict[ts] = {
+                        'folder': sanitized_name,
+                        'customer_name': customer_name,
+                        'timestamp': ts,
+                        'files': [],
+                        'collage_url': None,
+                        'collage_edited_url': None,
+                        'gif_url': None
+                    }
+                
+                file_path = f"/static/photos/{sanitized_name}/{file_name}"
+                if file_name.startswith('capture_'):
+                    sessions_dict[ts]['files'].append(file_path)
+                elif file_name.startswith('collage_edited_'):
+                    sessions_dict[ts]['collage_edited_url'] = file_path
+                elif file_name.startswith('collage_'):
+                    sessions_dict[ts]['collage_url'] = file_path
+                elif file_name.startswith('animation_'):
+                    sessions_dict[ts]['gif_url'] = file_path
+        
+        for ts in sorted(sessions_dict.keys(), reverse=True):
+            sess = sessions_dict[ts]
+            sess['files'].sort()
+            sessions.append(sess)
+            
+    return jsonify({'sessions': sessions})
+
+# ---------------------------------------------------------------------------
+# Delete photo
+# ---------------------------------------------------------------------------
+@app.route('/api/customer/photo', methods=['DELETE'])
+def delete_photo():
+    customer_name = session.get('customer_name')
+    if not customer_name:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    data = request.json or {}
+    file_url = data.get('file_url')
+    if not file_url:
+        return jsonify({'error': 'Missing file_url'}), 400
+        
+    sanitized_name = sanitize_filename(customer_name)
+    # Ensure the user can only delete their own photos
+    expected_prefix = f"/static/photos/{sanitized_name}/"
+    if not file_url.startswith(expected_prefix):
+        return jsonify({'error': 'Unauthorized to delete this file'}), 403
+        
+    filename = file_url[len(expected_prefix):]
+    # Prevent directory traversal
+    if '/' in filename or '\\' in filename:
+        return jsonify({'error': 'Invalid filename'}), 400
+        
+    file_path = os.path.join(PHOTOS_DIR, sanitized_name, filename)
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            return jsonify({'error': f'Failed to delete file: {str(e)}'}), 500
+    else:
+        return jsonify({'error': 'File not found'}), 404
+
+# ---------------------------------------------------------------------------
+# Admin edit save
+# ---------------------------------------------------------------------------
+@app.route('/api/admin/save_edit', methods=['POST'])
+def save_edit():
+    data = request.json or {}
+    session_dir = data.get('session_dir')
+    timestamp = data.get('timestamp')
+    edited_img_base64 = data.get('image')
+    if not session_dir or not edited_img_base64:
+        return jsonify({'error': 'Missing session_dir or image data'}), 400
+    session_path = os.path.join(PHOTOS_DIR, session_dir)
+    if not os.path.exists(session_path):
+        return jsonify({'error': 'Session directory not found'}), 404
+    try:
+        if ',' in edited_img_base64:
+            edited_img_base64 = edited_img_base64.split(',')[1]
+        img_bytes = base64.b64decode(edited_img_base64)
+        img = Image.open(BytesIO(img_bytes)).convert('RGB')
+        filename = f"collage_edited_{timestamp}.jpg" if timestamp else "collage_edited.jpg"
+        filepath = os.path.join(session_path, filename)
+        img.save(filepath, 'JPEG', quality=95)
+        return jsonify({
+            'status': 'success',
+            'collage_edited_url': f"/static/photos/{session_dir}/{filename}"
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ---------------------------------------------------------------------------
+# Logout
+# ---------------------------------------------------------------------------
+@app.route('/api/customer/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return jsonify({'status': 'logged out'})
+
+if __name__ == '__main__':
+    import sys
+    use_ssl = '--ssl' in sys.argv
+    ssl_ctx = 'adhoc' if use_ssl else None
+    if use_ssl:
+        print("Starting Flask with adhoc SSL (HTTPS) enabled.")
+    app.run(host='0.0.0.0', port=5000, debug=True, ssl_context=ssl_ctx)

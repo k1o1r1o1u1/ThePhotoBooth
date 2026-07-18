@@ -1,0 +1,7 @@
+*.gif
+*.png
+.DS_Store
+*.pyc
+.flask_secret
+transparent logo .png
+static/photos/

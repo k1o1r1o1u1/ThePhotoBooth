@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photobooth Admin Panel</title>
+  <link rel="icon" type="image/png" href="/static/logo.png">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Persistent corner logo watermark -->
+  <div class="corner-logo">
+    <img src="/static/logo.png" alt="Logo">
+  </div>
+
+  <header>
+    <div class="logo">
+      <img src="/static/logo.png" alt="Logo" class="logo-img">
+      <span class="logo-text">PHOTOBOOTH <span>ADMIN</span></span>
+    </div>
+    <nav>
+      <a href="/">Kiosk Mode</a>
+      <a href="/admin" class="active">Admin Panel</a>
+    </nav>
+  </header>
+
+  <main style="max-width: 100%; padding: 1.5rem;">
+    <div class="admin-layout glass-panel">
+      <!-- SIDEBAR: SESSIONS LIST -->
+      <div class="sessions-sidebar" style="border-right: 1px solid var(--glass-border);">
+        <div class="sessions-title">
+          <h3>Customer Folders</h3>
+          <div class="text-input-group" style="margin-top: 0.8rem;">
+            <input type="text" id="session-search" placeholder="Search customer name..." style="padding: 0.6rem; font-size: 0.9rem; width: 100%;">
+          </div>
+        </div>
+        <div class="sessions-list" id="sessions-list-container">
+          <!-- Populated by JavaScript -->
+          <div class="empty-state" style="padding: 2rem;">
+            <p>Loading sessions...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- WORKSPACE: IMAGE EDITOR / PRINTER -->
+      <div class="admin-workspace">
+        <!-- Main Edit Canvas Area -->
+        <div class="workspace-preview" id="workspace-preview-area">
+          <div class="empty-state" id="no-session-selected">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+            </svg>
+            <h3>No Customer Selected</h3>
+            <p>Select a customer folder from the sidebar list to edit, print or save their photostrip.</p>
+          </div>
+          
+          <div class="collage-canvas-container hidden" id="canvas-container">
+            <canvas id="collageCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Controls Sidebar -->
+        <div class="workspace-controls hidden" id="workspace-controls-panel">
+          <div style="margin-bottom: 0.5rem;">
+            <h2 id="active-session-name" style="margin-bottom: 0.2rem;">John Doe</h2>
+            <p id="active-session-time" class="session-date"></p>
+          </div>
+
+          <!-- Section 1: Filters -->
+          <div class="control-section">
+            <h4>1. Apply Filters</h4>
+            <div class="filter-grid">
+              <button class="filter-btn active" data-filter="normal">Normal</button>
+              <button class="filter-btn" data-filter="grayscale">Grayscale</button>
+              <button class="filter-btn" data-filter="sepia">Vintage Sepia</button>
+              <button class="filter-btn" data-filter="cyan">Cool Cyan</button>
+              <button class="filter-btn" data-filter="neon">Neon Pink</button>
+              <button class="filter-btn" data-filter="contrast">High Contrast</button>
+            </div>
+          </div>
+
+          <!-- Section 2: Custom Text / Footer Overlay -->
+          <div class="control-section">
+            <h4>2. Add Text Overlay</h4>
+            <div class="text-input-group">
+              <label for="overlay-text">Footer Text Message</label>
+              <input type="text" id="overlay-text" placeholder="e.g. Wedding Day 2026">
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 0.5rem;">
+                <div>
+                  <label for="font-family" style="font-size: 0.75rem;">Font Family</label>
+                  <select id="font-family" style="width: 100%; padding: 0.5rem; font-size: 0.8rem;">
+                    <option value="Outfit">Outfit</option>
+                    <option value="Inter">Inter</option>
+                    <option value="Courier New">Courier</option>
+                    <option value="Georgia">Georgia</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="font-color" style="font-size: 0.75rem;">Text Color</label>
+                  <select id="font-color" style="width: 100%; padding: 0.5rem; font-size: 0.8rem;">
+                    <option value="#000000">Black</option>
+                    <option value="#333333">Dark Grey</option>
+                    <option value="#ff007f">Neon Pink</option>
+                    <option value="#00f0ff">Electric Cyan</option>
+                  </select>
+                </div>
+              </div>
+              <button id="btn-apply-text" class="btn" style="background: rgba(255,255,255,0.6); border: 1px solid var(--glass-border); color: var(--text-primary); font-size: 0.95rem; margin-top: 0.5rem; padding: 0.6rem;">Apply Text</button>
+            </div>
+          </div>
+
+          <!-- Section 3: Actions -->
+          <div class="control-section" style="display: flex; flex-direction: column; gap: 0.8rem; background: rgba(255, 117, 143, 0.05); border-color: rgba(255, 117, 143, 0.2);">
+            <h4>3. Finish Actions</h4>
+            <button id="btn-save-edit" class="btn btn-primary" style="font-size: 1rem; padding: 0.8rem;">💾 Save Edited Image</button>
+            <button id="btn-print" class="btn" style="background: #22c55e; color: #fff; font-size: 1rem; padding: 0.8rem;">🖨️ Print Photostrip</button>
+            <button id="btn-download" class="btn" style="background: rgba(255,255,255,0.65); border: 1px solid var(--glass-border); color: var(--text-primary); font-size: 1rem; padding: 0.8rem;">📥 Download JPG</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photobooth</title>
+  <link rel="icon" type="image/png" href="/static/logo.png">
+  <link rel="stylesheet" href="/static/css/kiosk.css">
+</head>
+<body>
+
+  <!-- Session Timer (top-right, hidden by default) -->
+  <div id="session-timer" class="session-timer hidden">
+    <span id="timer-display">3:00</span>
+  </div>
+
+  <!-- Persistent logo watermark -->
+  <div class="corner-logo">
+    <img src="/static/logo.png" alt="Logo">
+  </div>
+
+  <!-- SCREEN 1: WELCOME / NAME ENTRY -->
+  <div id="screen-login" class="screen">
+    <div class="welcome-logo">
+      <img src="/static/logo.png" alt="Photobooth Logo" class="welcome-logo-img">
+    </div>
+    <h1 class="welcome-title">Welcome!</h1>
+    <p class="welcome-sub">Type your name below to get started</p>
+
+    <div class="name-input-wrap">
+      <input type="text" id="customer-name" placeholder="Your name here..." autocomplete="off" spellcheck="false">
+    </div>
+
+    <button id="btn-login" class="big-btn btn-go">
+      Let's Go! &nbsp;→ <kbd class="key-badge">Enter ↵</kbd>
+    </button>
+  </div>
+
+  <!-- SCREEN 2: DASHBOARD / DISCLAIMER -->
+  <div id="screen-dashboard" class="screen hidden">
+    <div class="welcome-logo">
+      <img src="/static/logo.png" alt="Photobooth Logo" class="welcome-logo-img">
+    </div>
+    <h1 class="welcome-title">Hi, <span id="dashboard-name">Friend</span>! 📸</h1>
+
+    <div class="disclaimer-card">
+      <p class="disclaimer-text">
+        You have <strong>5 seconds</strong> for each shot – <em>no retakes!</em><br>
+        This photobooth captures <strong>4 pictures</strong> in a row, so strike your best pose and have fun!
+      </p>
+      <p class="disclaimer-text" style="margin-top: 1rem;">
+        After the session, you can go to our personnel for photos and share the fun!
+      </p>
+      <p class="disclaimer-note">
+        ⏱ You have <strong>3 minutes</strong> for the photos. The timer will start after pressing Enter.
+      </p>
+    </div>
+
+    <button id="btn-new-session" class="big-btn btn-go" style="margin-top: 1.5rem;">
+      Start Photobooth! &nbsp;→ <kbd class="key-badge">Enter ↵</kbd>
+    </button>
+
+    <button id="btn-logout" class="small-btn btn-logout">
+      Sign Out <kbd class="key-badge key-badge-sm">Esc</kbd>
+    </button>
+  </div>
+
+
+
+  <!-- SCREEN 4: CAPTURE -->
+  <div id="screen-capture" class="screen hidden screen-capture-layout">
+    <div class="capture-top">
+      <h2 id="capture-status" class="capture-status-text">Get Ready!</h2>
+      <p id="capture-instruction" class="capture-instruction-text">Press the big button when you're ready!</p>
+    </div>
+
+    <div class="capture-main-area">
+      <div class="camera-container">
+        <video id="webcam" autoplay playsinline></video>
+        <div id="flash" class="flash-effect"></div>
+        <div id="countdown" class="countdown-overlay hidden">
+          <div id="countdown-num" class="countdown-number">3</div>
+        </div>
+      </div>
+
+      <div class="capture-side-panel">
+        <div class="capture-side-logo-wrap">
+          <img src="/static/logo.png" alt="Logo" class="capture-side-logo">
+        </div>
+        <div class="thumbnails-container" id="thumbs-bar"></div>
+
+        <div class="capture-btn-wrapper">
+          <button id="btn-capture" class="capture-trigger" title="Take Photo (Space)">
+            <span class="capture-trigger-inner">📷</span>
+          </button>
+          <p class="capture-key-hint">Press <kbd class="key-badge">Space</kbd> or click</p>
+        </div>
+
+        <button id="btn-capture-exit" class="small-btn btn-back capture-exit-btn">
+          ✕ Cancel <kbd class="key-badge key-badge-sm">Esc</kbd>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: REVIEW -->
+  <div id="screen-review" class="screen hidden screen-review-layout">
+    <div class="review-compact">
+      <div class="review-left">
+        <div class="collage-display-fit">
+          <img id="collage-preview" src="" alt="Your Photostrip">
+        </div>
+      </div>
+      <div class="review-right">
+        <div class="review-logo-wrap">
+          <img src="/static/logo.png" alt="Logo" class="review-logo-img">
+        </div>
+        <h1 class="welcome-title" style="font-size: clamp(1.5rem, 3vw, 2.2rem);">Your photos are ready!</h1>
+        <p class="welcome-sub" style="margin-bottom: 1.5rem; font-size: 0.95rem;">They've been saved automatically. Go to our personnel to collect!</p>
+
+        <div class="review-actions-compact">
+          <button id="btn-take-more" class="big-btn btn-go" tabindex="0">
+            Take More Photos <kbd class="key-badge">Enter ↵</kbd>
+          </button>
+          <button id="btn-goto-gallery" class="big-btn btn-secondary" tabindex="0">
+            See All Photos <kbd class="key-badge">G</kbd>
+          </button>
+          <button id="btn-review-home" class="small-btn btn-back" tabindex="0">
+            Back to Menu <kbd class="key-badge key-badge-sm">Esc</kbd>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 6: GALLERY -->
+  <div id="screen-gallery" class="screen hidden">
+    <div class="welcome-logo">
+      <img src="/static/logo.png" alt="Photobooth Logo" class="welcome-logo-img">
+    </div>
+    <h1 class="welcome-title">All Photos</h1>
+    <p class="welcome-sub">Your photo sessions</p>
+
+    <div id="gallery-sessions-container" class="gallery-sessions"></div>
+    <div id="gallery-empty" class="hidden gallery-empty-state">
+      <div style="font-size: 5rem;">📭</div>
+      <p>No photos yet!<br>Take your first session.</p>
+    </div>
+
+    <button id="btn-gallery-back" class="big-btn btn-go" style="margin-top: 2rem;">
+      ← Back to Menu <kbd class="key-badge">Esc</kbd>
+    </button>
+  </div>
+
+  <!-- LIGHTBOX MODAL -->
+  <div id="lightbox-modal" class="lightbox hidden">
+    <div class="lightbox-content">
+      <button id="btn-lightbox-close" class="lightbox-close" aria-label="Close">✕</button>
+      <img id="lightbox-img" src="" alt="Expanded View">
+      <div class="lightbox-actions">
+        <button id="btn-lightbox-download" class="small-btn btn-go" title="Download">
+          ⬇ Download
+        </button>
+        <button id="btn-lightbox-delete" class="small-btn btn-logout" title="Delete" style="margin-top: 1rem;">
+          🗑 Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/kiosk.js?v=2"></script>
+</body>
+</html>
