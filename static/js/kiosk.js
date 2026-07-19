@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let isCapturing = false;
   let burstAborted = false;
   const IDLE_TIMEOUT_MS = 120000; // 2 minutes
-  const SESSION_DURATION_MS = 180000; // 3 minutes
+  const SESSION_DURATION_MS = 240000; // 4 minutes
   let sessionTimer = null;
   let sessionTimerEnd = 0;
 
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   function showScreen(screen) {
     [screenLogin, screenDashboard, screenCapture, screenReview, screenGallery]
-      .forEach(s => { if(s) s.classList.add('hidden'); });
+      .forEach(s => { if (s) s.classList.add('hidden'); });
     screen.classList.remove('hidden');
     currentScreen = screen;
 
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================================
-  // Session Timer (3 minutes)
+  // Session Timer (5 minutes)
   // =========================================================================
   const timerContainer = document.getElementById('session-timer');
   const timerDisplay = document.getElementById('timer-display');
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         capturedImages = [];
         countdownOverlay.classList.add('hidden');
-        alert('Time is up! Your 3-minute session has ended.');
+        alert('Time is up! Your 4-minute session has ended.');
         performLogout();
         return;
       }
@@ -328,10 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnCapture.disabled = false;
       showScreen(screenCapture);
 
-      // Start the 3-minute session timer only if not already running
-      if (!sessionTimer) {
-        startSessionTimer();
-      }
+      // The session timer will now start when the first photo is taken.
 
     } catch (err) {
       console.error(err);
@@ -346,6 +343,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   async function startBurstCapture() {
     if (isCapturing) return;
+
+    // Start the session timer on the first capture click
+    if (!sessionTimer) {
+      startSessionTimer();
+    }
+
     isCapturing = true;
     burstAborted = false;
 
@@ -691,13 +694,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   function openLightbox(url) {
     currentLightboxImgUrl = url;
-    if(lightboxImg) lightboxImg.src = url;
-    if(lightboxModal) lightboxModal.classList.remove('hidden');
+    if (lightboxImg) lightboxImg.src = url;
+    if (lightboxModal) lightboxModal.classList.remove('hidden');
   }
 
   function closeLightbox() {
-    if(lightboxModal) lightboxModal.classList.add('hidden');
-    if(lightboxImg) lightboxImg.src = '';
+    if (lightboxModal) lightboxModal.classList.add('hidden');
+    if (lightboxImg) lightboxImg.src = '';
     currentLightboxImgUrl = null;
   }
 
@@ -714,7 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const a = document.createElement('a');
       a.href = currentLightboxImgUrl;
       const parts = currentLightboxImgUrl.split('/');
-      a.download = parts[parts.length - 1].split('?')[0]; 
+      a.download = parts[parts.length - 1].split('?')[0];
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -725,23 +728,23 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLightboxDelete.addEventListener('click', async () => {
       if (!currentLightboxImgUrl) return;
       if (!confirm("Are you sure you want to permanently delete this photo?")) return;
-      
-      const fileUrl = currentLightboxImgUrl.split('?')[0]; 
+
+      const fileUrl = currentLightboxImgUrl.split('?')[0];
       try {
         btnLightboxDelete.disabled = true;
         btnLightboxDelete.textContent = 'Deleting...';
-        
+
         const response = await fetch('/api/customer/photo', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ file_url: fileUrl })
         });
-        
+
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Failed to delete');
-        
+
         closeLightbox();
-        loadGallery(); 
+        loadGallery();
       } catch (err) {
         alert(err.message);
       } finally {
@@ -767,7 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
       oscillator.start();
       gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
       oscillator.stop(audioCtx.currentTime + 0.1);
-    } catch(e) {}
+    } catch (e) { }
   }
 
   function playShutter() {
@@ -784,6 +787,6 @@ document.addEventListener('DOMContentLoaded', () => {
       oscillator.start();
       gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
       oscillator.stop(audioCtx.currentTime + 0.1);
-    } catch(e) {}
+    } catch (e) { }
   }
 });

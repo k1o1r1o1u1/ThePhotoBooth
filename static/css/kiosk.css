@@ -135,8 +135,15 @@ body::before {
 }
 
 @keyframes timerPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.06); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.06);
+  }
 }
 
 kbd {
@@ -393,7 +400,7 @@ button:focus .key-badge {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.6);
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .btn-go:hover {
@@ -490,7 +497,7 @@ button.btn-go:focus .key-badge {
 
 .disclaimer-note {
   margin-top: 1.5rem;
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   color: var(--accent-pink);
   font-weight: 600;
   padding: 0.75rem 1rem;
@@ -701,14 +708,13 @@ button.btn-go:focus .key-badge {
 .capture-main-area {
   display: flex;
   flex-direction: row;
-  align-items: flex-end; /* Align to the bottom */
-  justify-content: flex-start; /* Align to the left */
+  align-items: center;
+  justify-content: space-between;
   gap: 4rem;
   width: 95vw;
   max-width: 1600px;
-  padding-left: 2rem;
-  padding-bottom: 2rem;
-  flex: 1; /* Allow it to take up remaining height */
+  padding: 0 2rem;
+  flex: 1;
 }
 
 .capture-side-logo-wrap {
@@ -727,16 +733,17 @@ button.btn-go:focus .key-badge {
   flex-direction: column;
   align-items: center;
   gap: 2rem;
+  min-width: 300px;
 }
 
 /* Camera */
 .camera-container {
   position: relative;
   width: 100%;
-  max-width: 1000px;
-  max-height: 70vh; /* Restrict height so it never overflows screen */
-  flex: 0 1 auto;
-  aspect-ratio: 433 / 318;
+  max-width: 1100px;
+  max-height: 80vh;
+  flex: 2;
+  aspect-ratio: 511 / 376;
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 3px solid var(--accent-cyan);
@@ -757,8 +764,8 @@ button.btn-go:focus .key-badge {
   inset: 0;
   display: flex;
   justify-content: center;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.55);
+  align-items: flex-start;
+  background: rgba(0, 0, 0, 0.15);
   z-index: 10;
   pointer-events: none;
 }
@@ -767,6 +774,8 @@ button.btn-go:focus .key-badge {
   font-family: var(--font-display);
   font-size: 12rem;
   font-weight: 900;
+  line-height: 1;
+  margin-top: -2rem;
   color: #fff;
   text-shadow:
     0 0 40px rgba(139, 92, 246, 0.8),

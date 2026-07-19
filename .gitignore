@@ -6,3 +6,5 @@
 transparent logo .png
 static/photos/
 .venv
+ngrok.exe
+
