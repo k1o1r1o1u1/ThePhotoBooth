@@ -4,7 +4,7 @@ import time
 import base64
 from datetime import timedelta
 from flask import Flask, request, jsonify, render_template, session
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFilter
 from io import BytesIO
 
 app = Flask(__name__)
@@ -84,10 +84,13 @@ def upload_photos():
                 img_base64 = img_base64.split(',')[1]
             img_bytes = base64.b64decode(img_base64)
             img = Image.open(BytesIO(img_bytes)).convert('RGB')
+            # Apply an Unsharp Mask to significantly increase photo sharpness
+            img = img.filter(ImageFilter.UnsharpMask(radius=1.5, percent=100, threshold=3))
+            
             # Save individual photo – timestamp ensures uniqueness within user folder
             filename = f"capture_{session_timestamp}_{idx + 1}.jpg"
             filepath = os.path.join(session_path, filename)
-            img.save(filepath, 'JPEG', quality=95)
+            img.save(filepath, 'JPEG', quality=100, subsampling=0)
             saved_files.append(f"/static/photos/{session_dir}/{filename}")
             pil_images.append(img)
         except Exception as e:
@@ -96,16 +99,16 @@ def upload_photos():
     collage_url = None
     if pil_images:
         try:
-            # Dimensions for 300 DPI
+            # Dimensions for 600 DPI (doubled from 300 DPI for higher resolution)
             # 50mm x 150mm frame
-            frame_w, frame_h = 591, 1772
+            frame_w, frame_h = 1182, 3544
             # 43.3mm x 31.8mm photo
-            photo_w, photo_h = 511, 376
+            photo_w, photo_h = 1022, 752
             
             # Margins
             left_margin = (frame_w - photo_w) // 2
-            top_margin = left_margin # 40px
-            gutter = 40
+            top_margin = left_margin
+            gutter = 80
             
             collage = Image.new('RGB', (frame_w, frame_h), (255, 255, 255))
             current_y = top_margin
@@ -118,7 +121,7 @@ def upload_photos():
                 
             collage_filename = f"collage_{session_timestamp}.jpg"
             collage_filepath = os.path.join(session_path, collage_filename)
-            collage.save(collage_filepath, 'JPEG', quality=95)
+            collage.save(collage_filepath, 'JPEG', quality=100, subsampling=0)
             collage_url = f"/static/photos/{session_dir}/{collage_filename}"
         except Exception as e:
             return jsonify({'error': f"Failed to build collage: {str(e)}"}), 500

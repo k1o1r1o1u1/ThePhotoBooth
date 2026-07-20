@@ -304,7 +304,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Start Webcam
       webcamStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 960, facingMode: 'user' },
+        video: { 
+          width: { ideal: 1920, max: 3840 }, 
+          height: { ideal: 1080, max: 2160 },
+          facingMode: 'user' 
+        },
         audio: false
       });
       videoWebcam.srcObject = webcamStream;
@@ -681,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(videoWebcam, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.95);
+    return canvas.toDataURL('image/jpeg', 1.0);
   }
 
   // =========================================================================
