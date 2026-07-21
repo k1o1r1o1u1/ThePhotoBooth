@@ -14,6 +14,9 @@
     <span id="timer-display">3:00</span>
   </div>
 
+  <!-- User name (top-left on capture & review) -->
+  <div id="session-user" class="session-user hidden"></div>
+
   <!-- Persistent logo watermark -->
   <div class="corner-logo">
     <img src="/static/logo.png" alt="Logo">
@@ -37,28 +40,31 @@
   </div>
 
   <!-- SCREEN 2: DASHBOARD / DISCLAIMER -->
-  <div id="screen-dashboard" class="screen hidden">
-    <div class="welcome-logo">
-      <img src="/static/logo.png" alt="Photobooth Logo" class="welcome-logo-img">
-    </div>
-    <h1 class="welcome-title">Hi, <span id="dashboard-name">Friend</span>! </h1>
+  <div id="screen-dashboard" class="screen hidden screen-dashboard">
+    <div class="dashboard-body">
+      <div class="dashboard-hero">
+        <img src="/static/logo.png" alt="Photobooth Logo" class="dashboard-logo">
+      </div>
 
-    <div class="disclaimer-card">
-      <p class="disclaimer-text">
-        You have <strong>5 seconds</strong> for each shot – <em>no retakes!</em><br>
-        This photobooth captures <strong>4 pictures</strong> in a row, so strike your best pose and have fun!
-      </p>
-      <p class="disclaimer-text" style="margin-top: 1rem;">
-        After the session, you can go to our personnel for photos and share the fun!
-      </p>
-      <p class="disclaimer-note">
-        ⏱ You have <strong>4 minutes</strong> for the photos. The timer will start after taking your first photo.
-      </p>
-    </div>
+      <h1 class="dashboard-greeting">Hi, <span id="dashboard-name">Friend</span>!</h1>
 
-    <button id="btn-new-session" class="big-btn btn-go" style="margin-top: 1.5rem;">
-      Start Photobooth! &nbsp;→ <kbd class="key-badge">Enter ↵</kbd>
-    </button>
+      <div class="disclaimer-card dashboard-instructions">
+        <p class="disclaimer-text">
+          You have <strong>5 seconds</strong> for each shot – <em>no retakes!</em><br>
+          This photobooth captures <strong>4 pictures</strong> in a row, so strike your best pose and have fun!
+        </p>
+        <p class="disclaimer-text disclaimer-text-secondary">
+          After the session, you can go to our personnel for photos and share the fun!
+        </p>
+        <p class="disclaimer-note">
+          ⏱ You have <strong>4 minutes</strong> for the photos. The timer will start after taking your first photo.
+        </p>
+      </div>
+
+      <button id="btn-new-session" class="big-btn btn-go dashboard-start-btn">
+        Start Photobooth <kbd class="key-badge">Enter ↵</kbd>
+      </button>
+    </div>
 
     <button id="btn-logout" class="small-btn btn-logout">
       Sign Out <kbd class="key-badge key-badge-sm">Esc</kbd>
@@ -168,6 +174,6 @@
     </div>
   </div>
 
-  <script src="/static/js/kiosk.js?v=2"></script>
+  <script src="/static/js/kiosk.js?v=5"></script>
 </body>
 </html>

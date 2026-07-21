@@ -55,6 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let burstAborted = false;
   const IDLE_TIMEOUT_MS = 120000; // 2 minutes
   const SESSION_DURATION_MS = 240000; // 4 minutes
+  const TIMER_END_STORAGE_KEY = 'photobooth_session_timer_end';
+  const TIMER_CUSTOMER_STORAGE_KEY = 'photobooth_session_timer_customer';
   let sessionTimer = null;
   let sessionTimerEnd = 0;
 
@@ -111,6 +113,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (screen === screenGallery) {
       setTimeout(() => btnGalleryBack.focus(), 100);
     }
+
+    updateSessionUserBadge(screen);
+    document.body.classList.toggle('on-dashboard', screen === screenDashboard);
   }
 
   // =========================================================================
@@ -118,32 +123,99 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   const timerContainer = document.getElementById('session-timer');
   const timerDisplay = document.getElementById('timer-display');
+  const sessionUser = document.getElementById('session-user');
+
+  function updateSessionUserBadge(screen) {
+    if (!sessionUser) return;
+    const show = screen === screenCapture || screen === screenReview;
+    sessionUser.classList.toggle('hidden', !show);
+    sessionUser.textContent = show && customerName ? customerName : '';
+  }
+
+  function getPersistedTimerEnd() {
+    const raw = localStorage.getItem(TIMER_END_STORAGE_KEY);
+    if (!raw) return null;
+    const end = parseInt(raw, 10);
+    if (!Number.isFinite(end)) return null;
+    const savedCustomer = localStorage.getItem(TIMER_CUSTOMER_STORAGE_KEY);
+    if (savedCustomer && customerName && savedCustomer !== customerName) return null;
+    return end;
+  }
+
+  function persistTimerEnd(end) {
+    if (end) {
+      localStorage.setItem(TIMER_END_STORAGE_KEY, String(end));
+      if (customerName) {
+        localStorage.setItem(TIMER_CUSTOMER_STORAGE_KEY, customerName);
+      }
+    } else {
+      localStorage.removeItem(TIMER_END_STORAGE_KEY);
+      localStorage.removeItem(TIMER_CUSTOMER_STORAGE_KEY);
+    }
+  }
+
+  function handleSessionTimerExpired() {
+    burstAborted = true;
+    isCapturing = false;
+    stopSessionTimer();
+    if (webcamStream) {
+      webcamStream.getTracks().forEach(t => t.stop());
+      webcamStream = null;
+    }
+    capturedImages = [];
+    countdownOverlay.classList.add('hidden');
+    alert('Time is up! Your 4-minute session has ended.');
+    performLogout();
+  }
+
+  function tickSessionTimer() {
+    const remaining = sessionTimerEnd - Date.now();
+    if (remaining <= 0) {
+      handleSessionTimerExpired();
+      return;
+    }
+    updateTimerDisplay();
+  }
+
+  function runSessionTimerInterval() {
+    if (sessionTimer) clearInterval(sessionTimer);
+    sessionTimer = setInterval(tickSessionTimer, 500);
+  }
 
   function startSessionTimer() {
-    stopSessionTimer();
+    const persistedEnd = getPersistedTimerEnd();
+    if (persistedEnd && persistedEnd > Date.now()) {
+      resumeSessionTimer(persistedEnd);
+      return;
+    }
+    if (persistedEnd && persistedEnd <= Date.now()) {
+      handleSessionTimerExpired();
+      return;
+    }
+
     sessionTimerEnd = Date.now() + SESSION_DURATION_MS;
+    persistTimerEnd(sessionTimerEnd);
     timerContainer.classList.remove('hidden');
     updateTimerDisplay();
-    sessionTimer = setInterval(() => {
-      const remaining = sessionTimerEnd - Date.now();
-      if (remaining <= 0) {
-        // Abort any running burst first
-        burstAborted = true;
-        isCapturing = false;
-        stopSessionTimer();
-        // Time's up – force finish
-        if (webcamStream) {
-          webcamStream.getTracks().forEach(t => t.stop());
-          webcamStream = null;
-        }
-        capturedImages = [];
-        countdownOverlay.classList.add('hidden');
-        alert('Time is up! Your 4-minute session has ended.');
-        performLogout();
-        return;
-      }
-      updateTimerDisplay();
-    }, 500);
+    runSessionTimerInterval();
+  }
+
+  function resumeSessionTimer(endTime) {
+    sessionTimerEnd = endTime;
+    persistTimerEnd(sessionTimerEnd);
+    timerContainer.classList.remove('hidden');
+    updateTimerDisplay();
+    runSessionTimerInterval();
+  }
+
+  function restoreSessionTimerIfActive() {
+    const persistedEnd = getPersistedTimerEnd();
+    if (!persistedEnd) return;
+    if (persistedEnd <= Date.now()) {
+      handleSessionTimerExpired();
+      return;
+    }
+    resumeSessionTimer(persistedEnd);
   }
 
   function updateTimerDisplay() {
@@ -169,6 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
       clearInterval(sessionTimer);
       sessionTimer = null;
     }
+    sessionTimerEnd = 0;
+    persistTimerEnd(null);
     if (timerContainer) timerContainer.classList.add('hidden');
     if (timerContainer) timerContainer.classList.remove('timer-warning', 'timer-critical');
   }
@@ -191,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (_) { /* proceed even if server is temporarily unreachable */ }
       showScreen(screenDashboard);
       startIdleWatcher();
+      restoreSessionTimerIfActive();
     } else {
       showScreen(screenLogin);
     }
@@ -214,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
     customerName = name;
     localStorage.setItem('photobooth_customer', customerName);
     dashboardName.textContent = customerName;
+    stopSessionTimer();
     showScreen(screenDashboard);
     startIdleWatcher();
   });
@@ -304,10 +380,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Start Webcam
       webcamStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          width: { ideal: 1920, max: 3840 }, 
+        video: {
+          width: { ideal: 1920, max: 3840 },
           height: { ideal: 1080, max: 2160 },
-          facingMode: 'user' 
+          facingMode: 'user'
         },
         audio: false
       });
@@ -349,8 +425,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isCapturing) return;
 
     // Start the session timer on the first capture click
-    if (!sessionTimer) {
+    if (!sessionTimer && !getPersistedTimerEnd()) {
       startSessionTimer();
+    } else if (!sessionTimer) {
+      restoreSessionTimerIfActive();
     }
 
     isCapturing = true;
@@ -533,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
           thumb.alt = 'Photo';
           thumb.style.height = '120px';
           thumb.style.width = 'auto';
-          thumb.style.border = '1px solid var(--glass-border)';
+          thumb.style.border = '1px solid var(--border)';
           thumb.addEventListener('click', () => openLightbox(thumb.src));
           imgRow.appendChild(thumb);
         });
@@ -561,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'Enter') {
         e.preventDefault();
         btnNewSession.click();
-      } else if (e.key === 'Escape') {
+      } else if (e.ctrlKey && e.key === 'F2') {
         e.preventDefault();
         performLogout();
       }
