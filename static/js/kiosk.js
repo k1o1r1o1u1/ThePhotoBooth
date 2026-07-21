@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const gallerySessionsContainer = document.getElementById('gallery-sessions-container');
   const galleryEmpty = document.getElementById('gallery-empty');
+  const galleryContent = document.querySelector('.gallery-content');
   const btnGalleryBack = document.getElementById('btn-gallery-back');
 
   const lightboxModal = document.getElementById('lightbox-modal');
@@ -48,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const TARGET_PHOTO_COUNT = 4; // always 4 photos
   let currentSessionDir = '';
   let webcamStream = null;
+  let webcamStreamRequestId = 0;
   let capturedImages = [];
   let idleTimer = null;
   let currentScreen = null;
@@ -90,11 +92,25 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // Screen Navigation
   // =========================================================================
+  function stopWebcam() {
+    if (webcamStream) {
+      webcamStream.getTracks().forEach(t => t.stop());
+      webcamStream = null;
+    }
+    if (videoWebcam) {
+      videoWebcam.srcObject = null;
+    }
+  }
+
   function showScreen(screen) {
     [screenLogin, screenDashboard, screenCapture, screenReview, screenGallery]
       .forEach(s => { if (s) s.classList.add('hidden'); });
     screen.classList.remove('hidden');
     currentScreen = screen;
+
+    if (screen === screenLogin) {
+      stopWebcam();
+    }
 
     // Re-trigger the fade-in animation
     screen.style.animation = 'none';
@@ -106,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => inputName.focus(), 100);
     } else if (screen === screenDashboard) {
       setTimeout(() => btnNewSession.focus(), 100);
+      startWebcamStream();
     } else if (screen === screenCapture) {
       setTimeout(() => btnCapture.focus(), 100);
     } else if (screen === screenReview) {
@@ -266,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showScreen(screenDashboard);
       startIdleWatcher();
       restoreSessionTimerIfActive();
+      await startWebcamStream();
     } else {
       showScreen(screenLogin);
     }
@@ -274,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // Login
   // =========================================================================
-  btnLogin.addEventListener('click', () => {
+  btnLogin.addEventListener('click', async () => {
     const name = inputName.value.trim();
     if (!name) {
       inputName.focus();
@@ -292,6 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     stopSessionTimer();
     showScreen(screenDashboard);
     startIdleWatcher();
+    await startWebcamStream();
   });
 
   inputName.addEventListener('keydown', (e) => {
@@ -306,13 +325,11 @@ document.addEventListener('DOMContentLoaded', () => {
     stopSessionTimer();
     localStorage.removeItem('photobooth_customer');
     customerName = '';
-    if (webcamStream) {
-      webcamStream.getTracks().forEach(t => t.stop());
-      webcamStream = null;
-    }
-    try { await fetch('/api/customer/logout', { method: 'POST' }); } catch (_) { }
+    webcamStreamRequestId++;
+    stopWebcam();
     inputName.value = '';
     showScreen(screenLogin);
+    fetch('/api/customer/logout', { method: 'POST' }).catch(() => {});
   }
 
   btnLogout.addEventListener('click', performLogout);
@@ -321,7 +338,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Dashboard Navigation
   // =========================================================================
   btnNewSession.addEventListener('click', () => startCaptureSession());
-  btnGalleryBack.addEventListener('click', () => showScreen(screenDashboard));
+  btnGalleryBack.addEventListener('click', async () => {
+    resetCaptureView();
+    showScreen(screenCapture);
+    await startWebcamStream();
+  });
   btnGotoGallery.addEventListener('click', () => loadGallery());
 
   // Review → Start Over
@@ -337,13 +358,68 @@ document.addEventListener('DOMContentLoaded', () => {
       isCapturing = false;
       // Hide countdown if visible
       countdownOverlay.classList.add('hidden');
-      if (webcamStream) {
-        webcamStream.getTracks().forEach(t => t.stop());
-        webcamStream = null;
-      }
       capturedImages = [];
       showScreen(screenDashboard);
     });
+  }
+
+  // Reset capture UI to a ready state (not starting a new session)
+  function resetCaptureView() {
+    burstAborted = false;
+    isCapturing = false;
+    // Stop countdown & flash
+    if (countdownOverlay) countdownOverlay.classList.add('hidden');
+    if (flashOverlay) flashOverlay.classList.remove('flash-animation');
+
+    // Reset texts
+    if (captureStatus) captureStatus.textContent = 'Get Ready!';
+    if (captureInstruction) captureInstruction.textContent = 'Press the button or Space to start!';
+
+    // Clear thumbnails
+    if (thumbsBar) thumbsBar.innerHTML = '';
+    for (let i = 0; i < TARGET_PHOTO_COUNT; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'thumbnail-slot';
+      slot.id = `thumb-slot-${i}`;
+      thumbsBar.appendChild(slot);
+    }
+
+    // Make sure capture button is enabled
+    if (btnCapture) {
+      btnCapture.disabled = false;
+      btnCapture.classList.remove('disabled');
+    }
+
+    // clear capturedImages state
+    capturedImages = [];
+  }
+
+  // Ensure webcam stream is active (used when returning from gallery)
+  async function startWebcamStream() {
+    try {
+      if (webcamStream) return;
+      const requestId = ++webcamStreamRequestId;
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1920, max: 3840 },
+          height: { ideal: 1080, max: 2160 },
+          facingMode: 'user'
+        },
+        audio: false
+      });
+      if (requestId !== webcamStreamRequestId) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      webcamStream = stream;
+      if (videoWebcam) {
+        videoWebcam.srcObject = webcamStream;
+        // try to play — ignore promise rejection that occurs when autoplay is blocked
+        videoWebcam.play().catch(() => {});
+      }
+    } catch (err) {
+      console.warn('Unable to start webcam:', err);
+    }
   }
 
   // Allow Enter/Space on all focusable action buttons
@@ -378,16 +454,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       currentSessionDir = sessionData.session_dir;
 
-      // Start Webcam
-      webcamStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1920, max: 3840 },
-          height: { ideal: 1080, max: 2160 },
-          facingMode: 'user'
-        },
-        audio: false
-      });
-      videoWebcam.srcObject = webcamStream;
+      // Ensure webcam is started and attached
+      await startWebcamStream();
+      if (videoWebcam && webcamStream) {
+        videoWebcam.srcObject = webcamStream;
+      }
 
       // Setup Thumbnail Slots
       thumbsBar.innerHTML = '';
@@ -494,11 +565,6 @@ document.addEventListener('DOMContentLoaded', () => {
     captureStatus.textContent = 'Processing...';
     captureInstruction.textContent = 'Building your photostrip, please wait!';
 
-    if (webcamStream) {
-      webcamStream.getTracks().forEach(track => track.stop());
-      webcamStream = null;
-    }
-
     try {
       const response = await fetch('/api/session/upload', {
         method: 'POST',
@@ -574,6 +640,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function updateGalleryLayout() {
+    // No arrow buttons needed for vertical scroll.
+  }
+
+  // Recompute layout after rendering and on resize
+  window.addEventListener('resize', () => updateGalleryLayout());
+
   function renderGallery(data) {
     gallerySessionsContainer.innerHTML = '';
     const sessions = data.sessions || [];
@@ -581,43 +654,35 @@ document.addEventListener('DOMContentLoaded', () => {
       galleryEmpty.classList.remove('hidden');
       return;
     }
-    sessions.forEach(sess => {
+    sessions.forEach((sess, idx) => {
       const card = document.createElement('div');
       card.className = 'gallery-card';
 
+      // Photostrip frame (vertical stack of up to 4 photos)
+      const stripFrame = document.createElement('div');
+      stripFrame.className = 'photostrip-frame';
+
+      const strip = document.createElement('div');
+      strip.className = 'photostrip';
+
+      if (sess.collage_url) {
+        const img = document.createElement('img');
+        img.src = sess.collage_url + '?t=' + Date.now();
+        img.alt = 'Collage';
+        img.className = 'photostrip-collage';
+        img.addEventListener('click', () => openLightbox(img.src));
+        strip.appendChild(img);
+      }
+
+      stripFrame.appendChild(strip);
+      card.appendChild(stripFrame);
+
+      // Title: Use Take number instead of Session
       const title = document.createElement('h3');
-      title.textContent = `Session: ${sess.folder}`;
+      title.textContent = `Take ${idx + 1}`;
+      title.className = 'gallery-title-take';
       card.appendChild(title);
 
-      const imgRow = document.createElement('div');
-      imgRow.className = 'gallery-images-row';
-
-      // Collage
-      if (sess.collage_url) {
-        const col = document.createElement('img');
-        col.src = sess.collage_url + '?t=' + Date.now();
-        col.alt = 'Collage';
-        col.style.height = '200px';
-        col.style.width = 'auto';
-        col.addEventListener('click', () => openLightbox(col.src));
-        imgRow.appendChild(col);
-      }
-
-      // Individual files
-      if (sess.files && sess.files.length > 0) {
-        sess.files.forEach(f => {
-          const thumb = document.createElement('img');
-          thumb.src = f + '?t=' + Date.now();
-          thumb.alt = 'Photo';
-          thumb.style.height = '120px';
-          thumb.style.width = 'auto';
-          thumb.style.border = '1px solid var(--border)';
-          thumb.addEventListener('click', () => openLightbox(thumb.src));
-          imgRow.appendChild(thumb);
-        });
-      }
-
-      card.appendChild(imgRow);
       gallerySessionsContainer.appendChild(card);
     });
   }
@@ -626,8 +691,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // GLOBAL KEYBOARD SHORTCUTS
   // =========================================================================
   document.addEventListener('keydown', (e) => {
-    // Don't intercept when typing in an input (except Escape)
-    if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.key !== 'Escape') return;
+    // Don't intercept when typing in an input (except Escape), but allow hidden admin shortcuts.
+    if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')
+      && e.key !== 'Escape'
+      && !(e.ctrlKey && (e.key === 'F2' || e.key === 'F3'))
+    ) return;
+
+    // Hidden admin shortcut: Ctrl+F2 logs out from any screen
+    if (e.ctrlKey && e.key === 'F2') {
+      e.preventDefault();
+      performLogout();
+      return;
+    }
+
+    // Hidden admin shortcut: Ctrl+F3 returns to dashboard from any screen
+    if (e.ctrlKey && e.key === 'F3') {
+      e.preventDefault();
+      showScreen(screenDashboard);
+      return;
+    }
+
+    // Secret shortcut: Ctrl+G opens gallery from Dashboard or Capture
+    if ((currentScreen === screenDashboard || currentScreen === screenCapture) && e.ctrlKey && (e.key === 'g' || e.key === 'G')) {
+      e.preventDefault();
+      loadGallery();
+      return;
+    }
 
     // ---- LOGIN SCREEN ----
     if (currentScreen === screenLogin) {
@@ -685,7 +774,13 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (currentScreen === screenGallery) {
       if (e.key === 'Escape') {
         e.preventDefault();
-        btnGalleryBack.click();
+        if (btnGalleryBack) btnGalleryBack.click();
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (galleryContent) {
+          const amount = galleryContent.clientHeight * 0.6 || 300;
+          galleryContent.scrollBy({ top: e.key === 'ArrowDown' ? amount : -amount, behavior: 'smooth' });
+        }
       }
     }
   });
