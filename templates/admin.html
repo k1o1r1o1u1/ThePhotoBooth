@@ -67,6 +67,48 @@
             <p id="active-session-time" class="session-date"></p>
           </div>
 
+          <!-- Section 0: Frame & Stickers -->
+          <div class="control-section studio-controls">
+            <h4>0. Base Frame & Stickers</h4>
+            
+            <div class="control-group" style="margin-bottom: 0.8rem;">
+              <label class="control-label" style="font-size: 0.8rem; margin-bottom: 0.3rem; display: block;">🎨 Frame Background</label>
+              <div class="color-palette" id="frame-color-palette" style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                <button class="color-dot active" data-color="#ffffff" style="background: #ffffff;" title="Classic White"></button>
+                <button class="color-dot" data-color="#fdfbf7" style="background: #fdfbf7;" title="Creamy Vanilla"></button>
+                <button class="color-dot" data-color="#1a1a1a" style="background: #1a1a1a;" title="Noir Black"></button>
+                <button class="color-dot" data-color="#ffd1dc" style="background: #ffd1dc;" title="Baby Pink"></button>
+                <button class="color-dot" data-color="#ffb6c1" style="background: #ffb6c1;" title="Soft Rose"></button>
+                <button class="color-dot" data-color="#ff69b4" style="background: #ff69b4;" title="Hot Pink"></button>
+                <button class="color-dot" data-color="#e2d4f0" style="background: #e2d4f0;" title="Pastel Lavender"></button>
+                <button class="color-dot" data-color="#d8b4fe" style="background: #d8b4fe;" title="Lilac Dreams"></button>
+                <button class="color-dot" data-color="#b4f8c8" style="background: #b4f8c8;" title="Matcha Mint"></button>
+                <button class="color-dot" data-color="#fbe7c6" style="background: #fbe7c6;" title="Warm Butter"></button>
+                <button class="color-dot" data-color="#a0c4ff" style="background: #a0c4ff;" title="Baby Blue"></button>
+                <button class="color-dot" data-color="#3d6b4f" style="background: #3d6b4f;" title="Sage Green"></button>
+                <button class="color-dot" data-color="#c96b4a" style="background: #c96b4a;" title="Terracotta Coral"></button>
+                <button class="color-dot" data-color="#c9a84c" style="background: #c9a84c;" title="Vintage Gold"></button>
+                <label class="custom-color-picker-wrap" title="Custom Color Picker" style="display: flex; align-items: center; gap: 0.3rem;">
+                  <input type="color" id="custom-color-picker" value="#ffffff" style="width: 20px; height: 20px; padding: 0; border: none; cursor: pointer; border-radius: 4px;" />
+                  <span class="custom-color-btn" style="font-size: 0.75rem;">Custom</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label" style="font-size: 0.8rem; margin-bottom: 0.3rem; display: block;">🎀 Sticker Packs</label>
+              <div class="sticker-packs-grid" id="sticker-packs-grid" style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                <button class="pack-btn active" data-pack="none" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">No Stickers</button>
+                <button class="pack-btn" data-pack="girlypop" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">💕 Girlypop</button>
+                <button class="pack-btn" data-pack="cute_stars" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">⭐ Cute Stars</button>
+                <button class="pack-btn" data-pack="kawaii_paws" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">🐾 Kawaii Paws</button>
+                <button class="pack-btn" data-pack="party_confetti" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">🎉 Party Confetti</button>
+                <button class="pack-btn" data-pack="dreamy_sparkle" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">✨ Dreamy Sparkle</button>
+                <button class="pack-btn" data-pack="y2k_vibes" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">💖 Y2K</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Section 1: Filters -->
           <div class="control-section">
             <h4>1. Apply Filters</h4>

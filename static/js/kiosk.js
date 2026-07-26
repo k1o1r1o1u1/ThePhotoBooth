@@ -40,11 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnLightboxClose = document.getElementById('btn-lightbox-close');
   const btnLightboxDownload = document.getElementById('btn-lightbox-download');
   const btnLightboxDelete = document.getElementById('btn-lightbox-delete');
+  const btnLightboxEdit = document.getElementById('btn-lightbox-edit');
   let currentLightboxImgUrl = null;
 
   // =========================================================================
   // Application State
   // =========================================================================
+  let isEditingGallerySession = false;
+  let currentGallerySessionTimestamp = null;
   let customerName = '';
   const TARGET_PHOTO_COUNT = 4; // always 4 photos
   let currentSessionDir = '';
@@ -347,7 +350,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Review → Start Over
   if (btnReviewHome) {
-    btnReviewHome.addEventListener('click', () => showScreen(screenDashboard));
+    btnReviewHome.addEventListener('click', () => {
+      if (isEditingGallerySession) {
+        isEditingGallerySession = false;
+        currentGallerySessionTimestamp = null;
+        loadGallery();
+      } else {
+        showScreen(screenDashboard);
+      }
+    });
   }
 
   // Capture → Cancel/Exit
@@ -559,6 +570,145 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================================
+  // Live Filters & Studio Controls Implementation
+  // =========================================================================
+  let activeFilter = 'normal';
+  let activeEffect = 'none';
+  let selectedFrameColor = '#ffffff';
+
+  const filterChips = document.querySelectorAll('#filter-chips .filter-chip');
+  const effectChips = document.querySelectorAll('#effect-chips .effect-chip');
+  const cameraOverlay = document.getElementById('camera-overlay-effect');
+  const colorDots = document.querySelectorAll('#frame-color-palette .color-dot');
+  const btnSaveCustomization = document.getElementById('btn-save-customization');
+
+  // Filter chips click events
+  filterChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      filterChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeFilter = chip.dataset.filter;
+      if (videoWebcam) {
+        videoWebcam.className = `filter-${activeFilter}`;
+      }
+    });
+  });
+
+  // Overlay chips click events
+  effectChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      effectChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeEffect = chip.dataset.effect;
+      if (cameraOverlay) {
+        cameraOverlay.className = activeEffect !== 'none' ? `camera-overlay effect-${activeEffect}` : 'camera-overlay';
+      }
+    });
+  });
+
+  const customColorPicker = document.getElementById('custom-color-picker');
+
+  // Color dots click events (Review Screen)
+  colorDots.forEach(dot => {
+    dot.addEventListener('click', async () => {
+      colorDots.forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+      await updateFramePreview(dot.dataset.color);
+    });
+  });
+
+  // Custom Color Picker input event
+  if (customColorPicker) {
+    customColorPicker.addEventListener('input', async (e) => {
+      colorDots.forEach(d => d.classList.remove('active'));
+      await updateFramePreview(e.target.value);
+    });
+  }
+
+  // Sticker Pack selection
+  let selectedStickerPack = 'none';
+  const packBtns = document.querySelectorAll('#sticker-packs-grid .pack-btn');
+
+  packBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      packBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedStickerPack = btn.dataset.pack;
+
+      // Re-render preview with sticker pack
+      await updateFramePreview(selectedFrameColor);
+    });
+  });
+
+  // Update the preview function to include sticker pack
+  async function updateFramePreviewFull() {
+    try {
+      const response = await fetch('/api/session/render_preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_dir: currentSessionDir,
+          images: capturedImages,
+          session_timestamp: currentGallerySessionTimestamp,
+          frame_color: selectedFrameColor,
+          sticker_pack: selectedStickerPack
+        })
+      });
+      const result = await response.json();
+      if (result.preview_data) {
+        imgCollagePreview.src = result.preview_data;
+      }
+    } catch (err) {
+      console.error('Failed to update preview:', err);
+    }
+  }
+
+  // Override updateFramePreview to also send sticker pack
+  async function updateFramePreview(hexColor) {
+    selectedFrameColor = hexColor;
+    await updateFramePreviewFull();
+  }
+
+  // Save customization button
+  if (btnSaveCustomization) {
+    btnSaveCustomization.addEventListener('click', async () => {
+      btnSaveCustomization.disabled = true;
+      btnSaveCustomization.textContent = 'Saving...';
+      try {
+        const endpoint = isEditingGallerySession ? '/api/session/edit_existing' : '/api/session/upload';
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_dir: currentSessionDir,
+            images: capturedImages,
+            session_timestamp: currentGallerySessionTimestamp,
+            frame_color: selectedFrameColor,
+            sticker_pack: selectedStickerPack
+          })
+        });
+        const result = await response.json();
+        if (result.error) throw new Error(result.error);
+        imgCollagePreview.src = result.collage_url + '?t=' + Date.now();
+        btnSaveCustomization.textContent = 'Saved! ✨';
+        
+        if (isEditingGallerySession) {
+          isEditingGallerySession = false;
+          currentGallerySessionTimestamp = null;
+          setTimeout(loadGallery, 1000);
+        }
+      } catch (err) {
+        alert('Failed to save customization: ' + err.message);
+      } finally {
+        setTimeout(() => {
+          btnSaveCustomization.disabled = false;
+          btnSaveCustomization.textContent = 'Save Custom Photostrip ✨';
+        }, 1500);
+      }
+    });
+  }
+
+  // =========================================================================
   // Finish Capture → Upload → Review
   // =========================================================================
   async function finishCapture() {
@@ -571,14 +721,23 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           session_dir: currentSessionDir,
-          images: capturedImages
+          images: capturedImages,
+          frame_color: selectedFrameColor
         })
       });
 
       const result = await response.json();
       if (result.error) throw new Error(result.error);
 
-      // Populate Review Screen
+      // Populate Review Screen — reset customizations to defaults
+      selectedFrameColor = '#ffffff';
+      selectedStickerPack = 'none';
+      colorDots.forEach(d => {
+        d.classList.toggle('active', d.dataset.color === '#ffffff');
+      });
+      packBtns.forEach(b => {
+        b.classList.toggle('active', b.dataset.pack === 'none');
+      });
       imgCollagePreview.src = result.collage_url + '?t=' + Date.now();
 
       // Populate Individual Photos
@@ -855,6 +1014,22 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.width = videoWebcam.videoWidth || 640;
     canvas.height = videoWebcam.videoHeight || 480;
     const ctx = canvas.getContext('2d');
+
+    // Apply active live filter to canvas context before drawing
+    if (activeFilter === 'bw') {
+      ctx.filter = 'grayscale(1) contrast(1.15)';
+    } else if (activeFilter === 'warm') {
+      ctx.filter = 'sepia(0.25) contrast(1.05) saturate(1.2)';
+    } else if (activeFilter === 'sepia') {
+      ctx.filter = 'sepia(0.85) hue-rotate(-15deg) contrast(1.1)';
+    } else if (activeFilter === 'pastel') {
+      ctx.filter = 'saturate(1.4) hue-rotate(330deg) brightness(1.05)';
+    } else if (activeFilter === 'cyber') {
+      ctx.filter = 'contrast(1.3) hue-rotate(180deg) saturate(1.6)';
+    } else {
+      ctx.filter = 'none';
+    }
+
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(videoWebcam, 0, 0, canvas.width, canvas.height);
@@ -885,6 +1060,41 @@ document.addEventListener('DOMContentLoaded', () => {
   if (lightboxModal) {
     lightboxModal.addEventListener('click', (e) => {
       if (e.target === lightboxModal) closeLightbox();
+    });
+  }
+
+  if (btnLightboxEdit) {
+    btnLightboxEdit.addEventListener('click', () => {
+      if (!currentLightboxImgUrl) return;
+      const parts = currentLightboxImgUrl.split('/');
+      const filename = parts[parts.length - 1].split('?')[0];
+      if (filename.startsWith('collage_')) {
+          let ts = filename.split('_')[1];
+          if (filename.startsWith('collage_edited_')) {
+              ts = filename.split('_')[2];
+          }
+          ts = ts.split('.')[0];
+          
+          currentGallerySessionTimestamp = ts;
+          currentSessionDir = customerName;
+          isEditingGallerySession = true;
+          
+          closeLightbox();
+          
+          // Reset UI
+          selectedFrameColor = '#ffffff';
+          selectedStickerPack = 'none';
+          colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
+          packBtns.forEach(b => b.classList.toggle('active', b.dataset.pack === 'none'));
+          
+          showScreen(screenReview);
+          
+          // Clear old preview until new one loads
+          imgCollagePreview.src = '';
+          updateFramePreviewFull();
+      } else {
+          alert('You can only edit collages, not individual photos or animations.');
+      }
     });
   }
 

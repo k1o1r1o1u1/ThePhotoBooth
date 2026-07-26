@@ -6,6 +6,7 @@ from datetime import timedelta
 from flask import Flask, request, jsonify, render_template, session
 from PIL import Image, ImageOps, ImageFilter
 from io import BytesIO
+from sticker_packs import draw_sticker_pack, STICKER_PACKS
 
 app = Flask(__name__)
 # Secure secret key for session management – persists across restarts
@@ -110,7 +111,13 @@ def upload_photos():
             top_margin = left_margin
             gutter = 80
             
-            collage = Image.new('RGB', (frame_w, frame_h), (255, 255, 255))
+            frame_color_hex = data.get('frame_color', '#ffffff')
+            try:
+                bg_color = tuple(int(frame_color_hex.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+            except Exception:
+                bg_color = (255, 255, 255)
+            
+            collage = Image.new('RGB', (frame_w, frame_h), bg_color)
             current_y = top_margin
             
             for img in pil_images:
@@ -118,6 +125,11 @@ def upload_photos():
                 scaled_img = ImageOps.fit(img, (photo_w, photo_h), Image.Resampling.LANCZOS)
                 collage.paste(scaled_img, (left_margin, current_y))
                 current_y += photo_h + gutter
+            
+            # Apply sticker pack if selected
+            sticker_pack = data.get('sticker_pack', 'none')
+            if sticker_pack and sticker_pack != 'none':
+                draw_sticker_pack(collage, sticker_pack)
                 
             collage_filename = f"collage_{session_timestamp}.jpg"
             collage_filepath = os.path.join(session_path, collage_filename)
@@ -128,8 +140,142 @@ def upload_photos():
     return jsonify({
         'status': 'success',
         'files': saved_files,
-        'collage_url': collage_url
+        'collage_url': collage_url,
+        'session_timestamp': session_timestamp
     })
+
+@app.route('/api/session/render_preview', methods=['POST'])
+def render_preview():
+    data = request.json or {}
+    session_dir = data.get('session_dir') or session.get('session_dir')
+    image_data_list = data.get('images', [])
+    session_timestamp = data.get('session_timestamp')
+    frame_color_hex = data.get('frame_color', '#ffffff')
+    
+    if not session_dir:
+        return jsonify({'error': 'Missing session_dir'}), 400
+        
+    if not image_data_list and not session_timestamp:
+        return jsonify({'error': 'Missing images and session_timestamp'}), 400
+
+    try:
+        frame_w, frame_h = 1182, 3544
+        photo_w, photo_h = 1022, 752
+        left_margin = (frame_w - photo_w) // 2
+        top_margin = left_margin
+        gutter = 80
+
+        try:
+            bg_color = tuple(int(frame_color_hex.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        except Exception:
+            bg_color = (255, 255, 255)
+
+        collage = Image.new('RGB', (frame_w, frame_h), bg_color)
+        current_y = top_margin
+        
+        # Load from base64 list OR from local files
+        pil_images = []
+        if image_data_list:
+            for img_base64 in image_data_list:
+                if ',' in img_base64:
+                    img_base64 = img_base64.split(',')[1]
+                img_bytes = base64.b64decode(img_base64)
+                img = Image.open(BytesIO(img_bytes)).convert('RGB')
+                pil_images.append(img)
+        else:
+            session_path = os.path.join(PHOTOS_DIR, session_dir)
+            for i in range(1, 5):
+                filepath = os.path.join(session_path, f"capture_{session_timestamp}_{i}.jpg")
+                if os.path.exists(filepath):
+                    img = Image.open(filepath).convert('RGB')
+                    pil_images.append(img)
+                    
+        if not pil_images:
+            return jsonify({'error': 'No images found to preview'}), 400
+
+        for img in pil_images:
+            # Apply unsharp mask to match capture flow, only if loaded from disk, but let's do it for all to be consistent
+            img = img.filter(ImageFilter.UnsharpMask(radius=1.5, percent=100, threshold=3))
+            scaled_img = ImageOps.fit(img, (photo_w, photo_h), Image.Resampling.LANCZOS)
+            collage.paste(scaled_img, (left_margin, current_y))
+            current_y += photo_h + gutter
+
+        # Apply sticker pack if selected
+        sticker_pack = data.get('sticker_pack', 'none')
+        if sticker_pack and sticker_pack != 'none':
+            draw_sticker_pack(collage, sticker_pack)
+
+        buffer = BytesIO()
+        collage.save(buffer, 'JPEG', quality=85)
+        buffer.seek(0)
+        base64_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        return jsonify({
+            'status': 'success',
+            'preview_data': f"data:image/jpeg;base64,{base64_str}"
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/session/edit_existing', methods=['POST'])
+def edit_existing():
+    """Rebuilds the collage for an existing session with new frame color and stickers."""
+    data = request.json or {}
+    session_dir = data.get('session_dir')
+    session_timestamp = data.get('session_timestamp')
+    frame_color_hex = data.get('frame_color', '#ffffff')
+    sticker_pack = data.get('sticker_pack', 'none')
+    
+    if not session_dir or not session_timestamp:
+        return jsonify({'error': 'Missing session_dir or session_timestamp'}), 400
+        
+    session_path = os.path.join(PHOTOS_DIR, session_dir)
+    if not os.path.exists(session_path):
+        return jsonify({'error': 'Session directory not found'}), 404
+        
+    try:
+        frame_w, frame_h = 1182, 3544
+        photo_w, photo_h = 1022, 752
+        left_margin = (frame_w - photo_w) // 2
+        top_margin = left_margin
+        gutter = 80
+        
+        try:
+            bg_color = tuple(int(frame_color_hex.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        except Exception:
+            bg_color = (255, 255, 255)
+            
+        collage = Image.new('RGB', (frame_w, frame_h), bg_color)
+        current_y = top_margin
+        
+        images_found = False
+        for i in range(1, 5):
+            filepath = os.path.join(session_path, f"capture_{session_timestamp}_{i}.jpg")
+            if os.path.exists(filepath):
+                images_found = True
+                img = Image.open(filepath).convert('RGB')
+                scaled_img = ImageOps.fit(img, (photo_w, photo_h), Image.Resampling.LANCZOS)
+                collage.paste(scaled_img, (left_margin, current_y))
+                current_y += photo_h + gutter
+                
+        if not images_found:
+            return jsonify({'error': 'No original capture images found'}), 404
+            
+        if sticker_pack and sticker_pack != 'none':
+            draw_sticker_pack(collage, sticker_pack)
+            
+        collage_filename = f"collage_{session_timestamp}.jpg"
+        collage_filepath = os.path.join(session_path, collage_filename)
+        collage.save(collage_filepath, 'JPEG', quality=100, subsampling=0)
+        collage_url = f"/static/photos/{session_dir}/{collage_filename}"
+        
+        return jsonify({
+            'status': 'success',
+            'collage_url': collage_url
+        })
+    except Exception as e:
+        return jsonify({'error': f"Failed to edit collage: {str(e)}"}), 500
+
 
 # ---------------------------------------------------------------------------
 # Admin – list all sessions

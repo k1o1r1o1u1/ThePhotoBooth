@@ -100,8 +100,9 @@
       </div>
 
       <div class="capture-main-area">
-        <div class="camera-container">
-          <video id="webcam" autoplay playsinline></video>
+        <div class="camera-container" id="camera-container-box">
+          <video id="webcam" autoplay playsinline class="filter-normal"></video>
+          <div id="camera-overlay-effect" class="camera-overlay"></div>
           <div id="flash" class="flash-effect"></div>
           <div id="countdown" class="countdown-overlay hidden">
             <div id="countdown-num" class="countdown-number">3</div>
@@ -112,6 +113,26 @@
           <div class="capture-side-logo-wrap">
             <img src="/static/logo.png" alt="Logo" class="capture-side-logo" />
           </div>
+
+          <!-- Live Filters Selector -->
+          <div class="live-filters-wrap">
+            <span class="live-filters-title">✨ Live Filters</span>
+            <div class="filter-chips-container" id="filter-chips">
+              <button class="filter-chip active" data-filter="normal">Normal</button>
+              <button class="filter-chip" data-filter="warm">Warm Glow</button>
+              <button class="filter-chip" data-filter="bw">B & W</button>
+              <button class="filter-chip" data-filter="sepia">Sepia Retro</button>
+              <button class="filter-chip" data-filter="pastel">Pastel Pink</button>
+              <button class="filter-chip" data-filter="cyber">Cyber Neon</button>
+            </div>
+            <div class="effect-chips-container" id="effect-chips">
+              <button class="effect-chip" data-effect="none">No Overlay</button>
+              <button class="effect-chip" data-effect="glitter">✨ Glitters</button>
+              <button class="effect-chip" data-effect="vignette">🕶️ Vignette</button>
+              <button class="effect-chip" data-effect="sparkles">💖 Sparkles</button>
+            </div>
+          </div>
+
           <div class="thumbnails-container" id="thumbs-bar"></div>
 
           <div class="capture-btn-wrapper">
@@ -137,7 +158,7 @@
       </div>
     </div>
 
-    <!-- SCREEN 5: REVIEW -->
+    <!-- SCREEN 5: REVIEW & CUSTOMIZATION STUDIO -->
     <div id="screen-review" class="screen hidden screen-review-layout">
       <div class="review-compact">
         <div class="review-left">
@@ -151,24 +172,70 @@
           </div>
           <h1
             class="welcome-title"
-            style="font-size: clamp(1.5rem, 3vw, 2.2rem)"
+            style="font-size: clamp(1.4rem, 2.5vw, 2rem)"
           >
-            Your photos are ready!
+            Customize Your Photostrip!
           </h1>
-          <p
-            class="welcome-sub"
-            style="margin-bottom: 1.5rem; font-size: 0.95rem"
-          >
-            They've been saved automatically. Go to our personnel to collect!
-          </p>
+
+          <!-- Studio Customization Controls -->
+          <div class="studio-controls">
+            <!-- Frame Background Colors -->
+            <div class="control-group">
+              <label class="control-label">🎨 Frame Background</label>
+              <div class="color-palette" id="frame-color-palette">
+                <!-- Classic & Modern Neutral -->
+                <button class="color-dot active" data-color="#ffffff" style="background: #ffffff;" title="Classic White"></button>
+                <button class="color-dot" data-color="#fdfbf7" style="background: #fdfbf7;" title="Creamy Vanilla"></button>
+                <button class="color-dot" data-color="#1a1a1a" style="background: #1a1a1a;" title="Noir Black"></button>
+                
+                <!-- Girly & Cute Pastels -->
+                <button class="color-dot" data-color="#ffd1dc" style="background: #ffd1dc;" title="Baby Pink"></button>
+                <button class="color-dot" data-color="#ffb6c1" style="background: #ffb6c1;" title="Soft Rose"></button>
+                <button class="color-dot" data-color="#ff69b4" style="background: #ff69b4;" title="Hot Pink"></button>
+                <button class="color-dot" data-color="#e2d4f0" style="background: #e2d4f0;" title="Pastel Lavender"></button>
+                <button class="color-dot" data-color="#d8b4fe" style="background: #d8b4fe;" title="Lilac Dreams"></button>
+                
+                <!-- Trendy Aesthetic Tones -->
+                <button class="color-dot" data-color="#b4f8c8" style="background: #b4f8c8;" title="Matcha Mint"></button>
+                <button class="color-dot" data-color="#fbe7c6" style="background: #fbe7c6;" title="Warm Butter"></button>
+                <button class="color-dot" data-color="#a0c4ff" style="background: #a0c4ff;" title="Baby Blue"></button>
+                <button class="color-dot" data-color="#3d6b4f" style="background: #3d6b4f;" title="Sage Green"></button>
+                <button class="color-dot" data-color="#c96b4a" style="background: #c96b4a;" title="Terracotta Coral"></button>
+                <button class="color-dot" data-color="#c9a84c" style="background: #c9a84c;" title="Vintage Gold"></button>
+
+                <!-- Custom Color Picker -->
+                <label class="custom-color-picker-wrap" title="Custom Color Picker">
+                  <input type="color" id="custom-color-picker" value="#ffffff" />
+                  <span class="custom-color-btn">🎨 Custom</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Sticker Packs -->
+            <div class="control-group">
+              <label class="control-label">🎀 Sticker Packs</label>
+              <div class="sticker-packs-grid" id="sticker-packs-grid">
+                <button class="pack-btn active" data-pack="none">No Stickers</button>
+                <button class="pack-btn" data-pack="girlypop">💕 Girlypop</button>
+                <button class="pack-btn" data-pack="cute_stars">⭐ Cute Stars</button>
+                <button class="pack-btn" data-pack="kawaii_paws">🐾 Kawaii Paws</button>
+                <button class="pack-btn" data-pack="party_confetti">🎉 Party Confetti</button>
+                <button class="pack-btn" data-pack="dreamy_sparkle">✨ Dreamy Sparkle</button>
+                <button class="pack-btn" data-pack="y2k_vibes">💖 Y2K Vibes</button>
+              </div>
+            </div>
+          </div>
 
           <div class="review-actions-compact">
-            <button id="btn-take-more" class="big-btn btn-go" tabindex="0">
+            <button id="btn-save-customization" class="big-btn btn-go" tabindex="0">
+              Save Custom Photostrip ✨
+            </button>
+            <button id="btn-take-more" class="small-btn btn-secondary" tabindex="0">
               Take More Photos <kbd class="key-badge">Enter ↵</kbd>
             </button>
             <button
               id="btn-goto-gallery"
-              class="big-btn btn-secondary"
+              class="small-btn btn-secondary"
               tabindex="0"
             >
               See All Photos <kbd class="key-badge">G</kbd>
@@ -221,9 +288,18 @@
         <img id="lightbox-img" src="" alt="Expanded View" />
         <div class="lightbox-actions">
           <button
-            id="btn-lightbox-download"
+            id="btn-lightbox-edit"
             class="small-btn btn-go"
+            title="Edit Photostrip"
+            style="margin-bottom: 1rem"
+          >
+            🎨 Edit Photostrip
+          </button>
+          <button
+            id="btn-lightbox-download"
+            class="small-btn"
             title="Download"
+            style="background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary);"
           >
             ⬇ Download
           </button>
@@ -239,6 +315,6 @@
       </div>
     </div>
 
-    <script src="/static/js/kiosk.js?v=5"></script>
+    <script src="/static/js/kiosk.js?v=6"></script>
   </body>
 </html>

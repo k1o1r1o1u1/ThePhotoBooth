@@ -23,12 +23,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnPrint = document.getElementById('btn-print');
   const btnDownload = document.getElementById('btn-download');
 
+  const colorDots = document.querySelectorAll('#frame-color-palette .color-dot');
+  const customColorPicker = document.getElementById('custom-color-picker');
+  const packBtns = document.querySelectorAll('#sticker-packs-grid .pack-btn');
+
   // Application State
   let sessions = [];
   let selectedSession = null;
   let originalImage = new Image();
   let currentFilter = 'normal';
   let textOverlay = '';
+  let selectedFrameColor = '#ffffff';
+  let selectedStickerPack = 'none';
 
   // 1. Fetch Sessions List on Load
   async function fetchSessions() {
@@ -110,8 +116,13 @@ document.addEventListener('DOMContentLoaded', () => {
     overlayTextInput.value = '';
     textOverlay = '';
     
-    // Load collage image into canvas
-    // Use edited image if it exists, otherwise fall back to original
+    // Reset UI
+    selectedFrameColor = '#ffffff';
+    selectedStickerPack = 'none';
+    colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
+    packBtns.forEach(b => b.classList.toggle('active', b.dataset.pack === 'none'));
+    
+    // Load Image
     const imgUrl = session.collage_edited_url || session.collage_url;
     
     if (!imgUrl) {
@@ -209,6 +220,55 @@ document.addEventListener('DOMContentLoaded', () => {
   fontFamilySelect.addEventListener('change', drawCanvas);
   fontColorSelect.addEventListener('change', drawCanvas);
 
+  // Frame Background & Stickers
+  async function updateAdminPreview() {
+    if (!selectedSession) return;
+    try {
+      const response = await fetch('/api/session/render_preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_dir: selectedSession.folder,
+          session_timestamp: selectedSession.timestamp,
+          frame_color: selectedFrameColor,
+          sticker_pack: selectedStickerPack
+        })
+      });
+      const result = await response.json();
+      if (result.preview_data) {
+        originalImage.src = result.preview_data;
+      }
+    } catch (err) {
+      console.error('Failed to update preview:', err);
+    }
+  }
+
+  colorDots.forEach(dot => {
+    dot.addEventListener('click', async () => {
+      colorDots.forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+      selectedFrameColor = dot.dataset.color;
+      await updateAdminPreview();
+    });
+  });
+
+  if (customColorPicker) {
+    customColorPicker.addEventListener('input', async (e) => {
+      colorDots.forEach(d => d.classList.remove('active'));
+      selectedFrameColor = e.target.value;
+      await updateAdminPreview();
+    });
+  }
+
+  packBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      packBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedStickerPack = btn.dataset.pack;
+      await updateAdminPreview();
+    });
+  });
+
   // 8. Save Edited Collage to Server
   btnSaveEdit.addEventListener('click', async () => {
     if (!selectedSession) return;
@@ -217,6 +277,21 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSaveEdit.textContent = 'Saving...';
     
     try {
+      // Step 1: Update the base collage via edit_existing if there's frame/sticker changes
+      if (selectedFrameColor !== '#ffffff' || selectedStickerPack !== 'none') {
+          await fetch('/api/session/edit_existing', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  session_dir: selectedSession.folder,
+                  session_timestamp: selectedSession.timestamp,
+                  frame_color: selectedFrameColor,
+                  sticker_pack: selectedStickerPack
+              })
+          });
+      }
+
+      // Step 2: Save the canvas layer (with text & filters) as the edited collage
       const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
       const response = await fetch('/api/admin/save_edit', {
         method: 'POST',
@@ -234,14 +309,16 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update session references
       selectedSession.collage_edited_url = result.collage_edited_url;
       
-      alert('Edited photo collage successfully saved to folder! 📁');
+      btnSaveEdit.textContent = 'Saved! ✨';
       fetchSessions();
     } catch (err) {
       console.error(err);
       alert('Failed to save edit: ' + err.message);
     } finally {
-      btnSaveEdit.disabled = false;
-      btnSaveEdit.textContent = '💾 Save Edited Image';
+      setTimeout(() => {
+        btnSaveEdit.disabled = false;
+        btnSaveEdit.textContent = '💾 Save Edited Image';
+      }, 1500);
     }
   });
 
