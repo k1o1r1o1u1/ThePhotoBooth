@@ -8,65 +8,62 @@
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-
   <!-- Persistent corner logo watermark -->
   <div class="corner-logo">
     <img src="/static/logo.png" alt="Logo">
   </div>
 
-  <header>
-    <div class="logo">
-      <img src="/static/logo.png" alt="Logo" class="logo-img">
-      <span class="logo-text">PHOTOBOOTH <span>ADMIN</span></span>
-    </div>
-    <nav>
-      <a href="/">Kiosk Mode</a>
-      <a href="/admin" class="active">Admin Panel</a>
-    </nav>
-  </header>
-
-  <main style="max-width: 100%; padding: 1.5rem;">
-    <div class="admin-layout glass-panel">
-      <!-- SIDEBAR: SESSIONS LIST -->
-      <div class="sessions-sidebar" style="border-right: 1px solid var(--border);">
-        <div class="sessions-title">
-          <h3>Customer Folders</h3>
-          <div class="text-input-group" style="margin-top: 0.8rem;">
-            <input type="text" id="session-search" placeholder="Search customer name..." style="padding: 0.6rem; font-size: 0.9rem; width: 100%;">
-          </div>
-        </div>
-        <div class="sessions-list" id="sessions-list-container">
-          <!-- Populated by JavaScript -->
-          <div class="empty-state" style="padding: 2rem;">
-            <p>Loading sessions...</p>
-          </div>
+  <main class="admin-fullscreen">
+    
+    <!-- VIEW 1: Customer List -->
+    <div id="view-customers" class="view-container active-view">
+      <div class="admin-header-bar">
+        <h2>Customer Folders</h2>
+        <input type="text" id="session-search" class="customer-search-input" placeholder="Search customer name...">
+      </div>
+      <div id="customer-grid" class="customer-grid">
+        <!-- Populated by JS -->
+        <div class="empty-state" style="padding: 2rem;">
+          <p>Loading customers...</p>
         </div>
       </div>
+    </div>
 
-      <!-- WORKSPACE: IMAGE EDITOR / PRINTER -->
-      <div class="admin-workspace">
+    <!-- VIEW 2: Customer Gallery -->
+    <div id="view-gallery" class="view-container">
+      <div class="admin-header-bar">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <button id="btn-back-to-customers" class="back-btn">← Back</button>
+          <h2 id="gallery-customer-name">Customer Name</h2>
+        </div>
+      </div>
+      <div id="gallery-grid" class="gallery-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- VIEW 3: Editor -->
+    <div id="view-editor" class="view-container">
+      <div class="admin-header-bar">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <button id="btn-back-to-gallery" class="back-btn">← Back to Gallery</button>
+          <h2 id="editor-customer-name">Customer Name</h2>
+        </div>
+        <p id="active-session-time" class="session-date" style="margin: 0;"></p>
+      </div>
+
+      <div class="admin-workspace" style="padding: 0; height: calc(100vh - 120px);">
         <!-- Main Edit Canvas Area -->
-        <div class="workspace-preview" id="workspace-preview-area">
-          <div class="empty-state" id="no-session-selected">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-            </svg>
-            <h3>No Customer Selected</h3>
-            <p>Select a customer folder from the sidebar list to edit, print or save their photostrip.</p>
-          </div>
-          
-          <div class="collage-canvas-container hidden" id="canvas-container">
-            <canvas id="collageCanvas"></canvas>
+        <div class="workspace-preview" id="workspace-preview">
+          <div class="collage-canvas-container" id="canvas-container">
+            <div class="zoom-wrapper" id="zoom-wrapper">
+              <canvas id="collageCanvas"></canvas>
+            </div>
           </div>
         </div>
 
         <!-- Controls Sidebar -->
-        <div class="workspace-controls hidden" id="workspace-controls-panel">
-          <div style="margin-bottom: 0.5rem;">
-            <h2 id="active-session-name" style="margin-bottom: 0.2rem;">John Doe</h2>
-            <p id="active-session-time" class="session-date"></p>
-          </div>
-
+        <div class="workspace-controls" id="workspace-controls-panel">
           <!-- Section 0: Frame & Stickers -->
           <div class="control-section studio-controls">
             <h4>0. Base Frame & Stickers</h4>
@@ -105,6 +102,9 @@
                 <button class="pack-btn" data-pack="party_confetti" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">🎉 Party Confetti</button>
                 <button class="pack-btn" data-pack="dreamy_sparkle" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">✨ Dreamy Sparkle</button>
                 <button class="pack-btn" data-pack="y2k_vibes" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">💖 Y2K</button>
+                <button class="pack-btn" data-pack="party_banners" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">🎊 Banners</button>
+                <button class="pack-btn" data-pack="party_lights" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">💡 Lights</button>
+                <button class="pack-btn" data-pack="love_theme" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">💘 Love</button>
               </div>
             </div>
           </div>
@@ -120,6 +120,25 @@
               <button class="filter-btn" data-filter="neon">Neon Pink</button>
               <button class="filter-btn" data-filter="contrast">High Contrast</button>
             </div>
+            
+            <div style="margin-top: 1.5rem;">
+              <h4 style="font-size: 0.9rem; margin-bottom: 0.8rem; border-left: none; padding-left: 0;">Image Adjustments</h4>
+              
+              <div class="slider-group">
+                <label><span>☀️ Brightness</span> <span id="val-brightness">100%</span></label>
+                <input type="range" id="slider-brightness" min="50" max="150" value="100">
+              </div>
+              
+              <div class="slider-group">
+                <label><span>🌓 Contrast</span> <span id="val-contrast">100%</span></label>
+                <input type="range" id="slider-contrast" min="50" max="150" value="100">
+              </div>
+              
+              <div class="slider-group">
+                <label><span>🌈 Saturation</span> <span id="val-saturation">100%</span></label>
+                <input type="range" id="slider-saturation" min="0" max="200" value="100">
+              </div>
+            </div>
           </div>
 
           <!-- Section 2: Custom Text / Footer Overlay -->
@@ -133,23 +152,48 @@
                 <div>
                   <label for="font-family" style="font-size: 0.75rem;">Font Family</label>
                   <select id="font-family" style="width: 100%; padding: 0.5rem; font-size: 0.8rem;">
+                    <!-- Standard Fonts -->
                     <option value="Outfit">Outfit</option>
                     <option value="Inter">Inter</option>
-                    <option value="Courier New">Courier</option>
-                    <option value="Georgia">Georgia</option>
+                    <option value="Courier New">Typewriter (Courier)</option>
+                    <!-- Instagram-style Fonts -->
+                    <option value="Montserrat">Modern (Montserrat)</option>
+                    <option value="Anton">Strong (Anton)</option>
+                    <option value="Pacifico">Neon (Pacifico)</option>
+                    <option value="Yellowtail">Script (Yellowtail)</option>
+                    <option value="Impact">Meme (Impact)</option>
                   </select>
                 </div>
                 <div>
                   <label for="font-color" style="font-size: 0.75rem;">Text Color</label>
                   <select id="font-color" style="width: 100%; padding: 0.5rem; font-size: 0.8rem;">
                     <option value="#000000">Black</option>
+                    <option value="#ffffff">White</option>
                     <option value="#333333">Dark Grey</option>
                     <option value="#ff007f">Neon Pink</option>
                     <option value="#00f0ff">Electric Cyan</option>
                   </select>
                 </div>
               </div>
-              <button id="btn-apply-text" class="btn" style="background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); font-size: 0.95rem; margin-top: 0.5rem; padding: 0.6rem;">Apply Text</button>
+              
+              <!-- Text Styling Options -->
+              <div style="margin-top: 0.8rem;">
+                <div class="slider-group">
+                  <label><span>Aa Font Size</span> <span id="val-font-size">60px</span></label>
+                  <input type="range" id="slider-font-size" min="30" max="150" value="60">
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                  <button id="btn-text-bold" class="btn text-style-btn" style="flex: 1; font-weight: bold; padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--border); background: var(--bg-primary);">B</button>
+                  <button id="btn-text-italic" class="btn text-style-btn" style="flex: 1; font-style: italic; padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--border); background: var(--bg-primary);">I</button>
+                  <button id="btn-text-underline" class="btn text-style-btn" style="flex: 1; text-decoration: underline; padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--border); background: var(--bg-primary);">U</button>
+                </div>
+              </div>
+              
+              <p style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.8rem;">💡 Tip: You can drag the text anywhere on the canvas!</p>
+              <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <button id="btn-apply-text" class="btn" style="flex: 1; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); font-size: 0.95rem; padding: 0.6rem;">Apply Text</button>
+                <button id="btn-clear-text" class="btn" style="flex: 1; background: #fff0f0; border: 1px solid #ffcccc; color: #cc0000; font-size: 0.95rem; padding: 0.6rem;">Clear Text</button>
+              </div>
             </div>
           </div>
 
@@ -157,13 +201,23 @@
           <div class="control-section" style="display: flex; flex-direction: column; gap: 0.8rem; background: rgba(255, 117, 143, 0.05); border-color: rgba(255, 117, 143, 0.2);">
             <h4>3. Finish Actions</h4>
             <button id="btn-save-edit" class="btn btn-primary" style="font-size: 1rem; padding: 0.8rem;">💾 Save Edited Image</button>
-            <button id="btn-print" class="btn" style="background: #22c55e; color: #fff; font-size: 1rem; padding: 0.8rem;">🖨️ Print Photostrip</button>
             <button id="btn-download" class="btn" style="background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); font-size: 1rem; padding: 0.8rem;">📥 Download JPG</button>
           </div>
         </div>
       </div>
     </div>
   </main>
+
+  <!-- Preview Modal -->
+  <div id="preview-modal" class="preview-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; opacity: 0; transition: opacity 0.2s ease;">
+    <div style="max-height: 80vh; position: relative;">
+      <img id="preview-modal-img" src="" style="max-height: 80vh; max-width: 90vw; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+    </div>
+    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+      <button id="btn-preview-close" class="btn btn-secondary">Cancel</button>
+      <button id="btn-preview-edit" class="btn btn-primary">Open in Editor</button>
+    </div>
+  </div>
 
   <script src="/static/js/admin.js"></script>
 </body>

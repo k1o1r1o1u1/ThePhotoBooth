@@ -464,6 +464,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sessionData.error) throw new Error(sessionData.error);
 
       currentSessionDir = sessionData.session_dir;
+      isEditingGallerySession = false;
+      currentGallerySessionTimestamp = null;
+      
+      // Reset UI customizations for new capture
+      selectedFrameColor = '#ffffff';
+      selectedStickerPack = 'none';
+      const colorDots = document.querySelectorAll('#frame-color-palette .color-dot');
+      const packBtns = document.querySelectorAll('#sticker-packs-grid .pack-btn');
+      if (colorDots) {
+          colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
+      }
+      if (packBtns) {
+          packBtns.forEach(b => b.classList.toggle('active', b.dataset.pack === 'none'));
+      }
 
       // Ensure webcam is started and attached
       await startWebcamStream();
@@ -677,11 +691,11 @@ document.addEventListener('DOMContentLoaded', () => {
         imgCollagePreview.src = result.collage_url + '?t=' + Date.now();
         btnSaveCustomization.textContent = 'Saved! ✨';
         
-        if (isEditingGallerySession) {
-          isEditingGallerySession = false;
-          currentGallerySessionTimestamp = null;
-          setTimeout(loadGallery, 1000);
-        }
+        // Stay on the review/edit screen after saving; do not redirect to gallery.
+        // Clear the editing state so subsequent actions start fresh and don't
+        // unintentionally re-use the previous `frame_color` or edit endpoint.
+        isEditingGallerySession = false;
+        currentGallerySessionTimestamp = null;
       } catch (err) {
         alert('Failed to save customization: ' + err.message);
       } finally {
@@ -724,6 +738,12 @@ document.addEventListener('DOMContentLoaded', () => {
         b.classList.toggle('active', b.dataset.pack === 'none');
       });
       imgCollagePreview.src = result.collage_url + '?t=' + Date.now();
+      
+      // Mark as editing an existing session so the 'Save Custom Photostrip' button 
+      // calls edit_existing rather than upload, preventing duplicate captures.
+      currentGallerySessionTimestamp = result.session_timestamp;
+      isEditingGallerySession = true;
+      capturedImages = []; // Clear base64 arrays since they are saved on server now
 
       // Populate Individual Photos
       const galleryContainer = document.getElementById('individual-photos-gallery');
@@ -798,37 +818,43 @@ document.addEventListener('DOMContentLoaded', () => {
       galleryEmpty.classList.remove('hidden');
       return;
     }
-    sessions.forEach((sess, idx) => {
+    
+    // Sort oldest-first
+    const sortedSessions = [...sessions].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    
+    sortedSessions.forEach((sess) => {
+      if (sess.collage_url) {
+        addGalleryCard(sess.collage_url);
+      }
+      
+      const editedUrls = sess.collage_edited_urls || [];
+      editedUrls.forEach((editUrl) => {
+        addGalleryCard(editUrl);
+      });
+    });
+  }
+  
+  function addGalleryCard(imgUrl) {
       const card = document.createElement('div');
       card.className = 'gallery-card';
 
-      // Photostrip frame (vertical stack of up to 4 photos)
       const stripFrame = document.createElement('div');
       stripFrame.className = 'photostrip-frame';
 
       const strip = document.createElement('div');
       strip.className = 'photostrip';
 
-      if (sess.collage_url) {
-        const img = document.createElement('img');
-        img.src = sess.collage_url + '?t=' + Date.now();
-        img.alt = 'Collage';
-        img.className = 'photostrip-collage';
-        img.addEventListener('click', () => openLightbox(img.src));
-        strip.appendChild(img);
-      }
+      const img = document.createElement('img');
+      img.src = imgUrl + '?t=' + Date.now();
+      img.alt = 'Collage';
+      img.className = 'photostrip-collage';
+      img.addEventListener('click', () => openLightbox(img.src));
+      strip.appendChild(img);
 
       stripFrame.appendChild(strip);
       card.appendChild(stripFrame);
 
-      // Title: Use Take number instead of Session
-      const title = document.createElement('h3');
-      title.textContent = `Take ${idx + 1}`;
-      title.className = 'gallery-title-take';
-      card.appendChild(title);
-
       gallerySessionsContainer.appendChild(card);
-    });
   }
 
   // =========================================================================

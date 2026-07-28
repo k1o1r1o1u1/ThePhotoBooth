@@ -105,6 +105,9 @@ def upload_photos():
             frame_w, frame_h = 1182, 3544
             # 43.3mm x 31.8mm photo
             photo_w, photo_h = 1022, 752
+            # 300 DPI alternative:
+            # frame_w, frame_h = 591, 1772
+            # photo_w, photo_h = 511, 376
             
             # Margins
             left_margin = (frame_w - photo_w) // 2
@@ -151,6 +154,7 @@ def render_preview():
     image_data_list = data.get('images', [])
     session_timestamp = data.get('session_timestamp')
     frame_color_hex = data.get('frame_color', '#ffffff')
+    layer_type = data.get('layer_type', 'full')
     
     if not session_dir:
         return jsonify({'error': 'Missing session_dir'}), 400
@@ -161,9 +165,26 @@ def render_preview():
     try:
         frame_w, frame_h = 1182, 3544
         photo_w, photo_h = 1022, 752
+        # 300 DPI alternative:
+        # frame_w, frame_h = 591, 1772
+        # photo_w, photo_h = 511, 376
         left_margin = (frame_w - photo_w) // 2
         top_margin = left_margin
         gutter = 80
+
+        if layer_type == 'stickers_only':
+            collage = Image.new('RGBA', (frame_w, frame_h), (0, 0, 0, 0))
+            sticker_pack = data.get('sticker_pack', 'none')
+            if sticker_pack and sticker_pack != 'none':
+                draw_sticker_pack(collage, sticker_pack)
+            buffer = BytesIO()
+            collage.save(buffer, 'PNG')
+            buffer.seek(0)
+            base64_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
+            return jsonify({
+                'status': 'success',
+                'preview_data': f"data:image/png;base64,{base64_str}"
+            })
 
         try:
             bg_color = tuple(int(frame_color_hex.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
@@ -236,6 +257,9 @@ def edit_existing():
     try:
         frame_w, frame_h = 1182, 3544
         photo_w, photo_h = 1022, 752
+        # 300 DPI alternative:
+        # frame_w, frame_h = 591, 1772
+        # photo_w, photo_h = 511, 376
         left_margin = (frame_w - photo_w) // 2
         top_margin = left_margin
         gutter = 80
@@ -247,19 +271,14 @@ def edit_existing():
             
         collage = Image.new('RGB', (frame_w, frame_h), bg_color)
         current_y = top_margin
-        # Generate a new timestamp so this edit becomes a completely new copy in the gallery
-        new_timestamp = str(int(time.time()))
+        # Generate a new timestamp to uniquely identify this edit
+        edit_timestamp = str(int(time.time()))
         
         images_found = False
-        import shutil
         for i in range(1, 5):
             old_filepath = os.path.join(session_path, f"capture_{session_timestamp}_{i}.jpg")
             if os.path.exists(old_filepath):
                 images_found = True
-                # Copy the original capture to the new timestamp
-                new_filepath = os.path.join(session_path, f"capture_{new_timestamp}_{i}.jpg")
-                shutil.copy2(old_filepath, new_filepath)
-                
                 img = Image.open(old_filepath).convert('RGB')
                 scaled_img = ImageOps.fit(img, (photo_w, photo_h), Image.Resampling.LANCZOS)
                 collage.paste(scaled_img, (left_margin, current_y))
@@ -271,8 +290,8 @@ def edit_existing():
         if sticker_pack and sticker_pack != 'none':
             draw_sticker_pack(collage, sticker_pack)
             
-        # Save as a completely new collage
-        collage_filename = f"collage_{new_timestamp}.jpg"
+        # Save as an edited collage under the same session
+        collage_filename = f"collage_edited_{session_timestamp}_{edit_timestamp}.jpg"
         collage_filepath = os.path.join(session_path, collage_filename)
         collage.save(collage_filepath, 'JPEG', quality=100, subsampling=0)
         collage_url = f"/static/photos/{session_dir}/{collage_filename}"
@@ -308,6 +327,7 @@ def get_sessions():
                         if file_name.startswith('capture_'):
                             ts = parts[1]
                         elif file_name.startswith('collage_edited_'):
+                            # collage_edited_{session_ts}.jpg  OR  collage_edited_{session_ts}_{edit_ts}.jpg
                             ts = parts[2].split('.')[0]
                         elif file_name.startswith('collage_'):
                             ts = parts[1].split('.')[0]
@@ -328,7 +348,7 @@ def get_sessions():
                                 'time': formatted_time,
                                 'files': [],
                                 'collage_url': None,
-                                'collage_edited_url': None,
+                                'collage_edited_urls': [],
                                 'gif_url': None
                             }
                         
@@ -336,7 +356,7 @@ def get_sessions():
                         if file_name.startswith('capture_'):
                             sessions_dict[ts]['files'].append(file_path)
                         elif file_name.startswith('collage_edited_'):
-                            sessions_dict[ts]['collage_edited_url'] = file_path
+                            sessions_dict[ts]['collage_edited_urls'].append(file_path)
                         elif file_name.startswith('collage_'):
                             sessions_dict[ts]['collage_url'] = file_path
                         elif file_name.startswith('animation_'):
@@ -345,6 +365,7 @@ def get_sessions():
                 for ts in sessions_dict:
                     sess = sessions_dict[ts]
                     sess['files'].sort()
+                    sess['collage_edited_urls'].sort()
                     sessions.append(sess)
         
         sessions.sort(key=lambda x: x['timestamp'], reverse=True)
@@ -390,7 +411,7 @@ def customer_gallery():
                         'timestamp': ts,
                         'files': [],
                         'collage_url': None,
-                        'collage_edited_url': None,
+                        'collage_edited_urls': [],
                         'gif_url': None
                     }
                 
@@ -398,7 +419,7 @@ def customer_gallery():
                 if file_name.startswith('capture_'):
                     sessions_dict[ts]['files'].append(file_path)
                 elif file_name.startswith('collage_edited_'):
-                    sessions_dict[ts]['collage_edited_url'] = file_path
+                    sessions_dict[ts]['collage_edited_urls'].append(file_path)
                 elif file_name.startswith('collage_'):
                     sessions_dict[ts]['collage_url'] = file_path
                 elif file_name.startswith('animation_'):
@@ -407,6 +428,7 @@ def customer_gallery():
         for ts in sorted(sessions_dict.keys(), reverse=True):
             sess = sessions_dict[ts]
             sess['files'].sort()
+            sess['collage_edited_urls'].sort()
             sessions.append(sess)
             
     return jsonify({'sessions': sessions})
@@ -465,7 +487,10 @@ def save_edit():
             edited_img_base64 = edited_img_base64.split(',')[1]
         img_bytes = base64.b64decode(edited_img_base64)
         img = Image.open(BytesIO(img_bytes)).convert('RGB')
-        filename = f"collage_edited_{timestamp}.jpg" if timestamp else "collage_edited.jpg"
+        # Use current time as unique edit identifier to support multiple edits
+        import time as time_mod
+        edit_ts = str(int(time_mod.time()))
+        filename = f"collage_edited_{timestamp}_{edit_ts}.jpg" if timestamp else f"collage_edited_{edit_ts}.jpg"
         filepath = os.path.join(session_path, filename)
         img.save(filepath, 'JPEG', quality=95)
         return jsonify({
