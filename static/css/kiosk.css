@@ -703,70 +703,93 @@ button.btn-go:focus .key-badge {
    CAPTURE SCREEN (Screen 4)
    ========================================================================= */
 .screen-capture-layout {
+  display: flex;
+  flex-direction: column;
   justify-content: flex-start;
-  padding-top: 1.5rem;
+  align-items: stretch;
+  padding: 0;
   gap: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
 .capture-top {
-  margin-bottom: 1rem;
+  padding: 0.6rem 2rem;
+  background: var(--bg-primary);
+  text-align: center;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .capture-status-text {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(1.4rem, 3vw, 2rem);
-  margin-bottom: 0.3rem;
+  font-size: clamp(1.1rem, 2.2vw, 1.6rem);
+  margin-bottom: 0.1rem;
   color: var(--accent-green);
 }
 
 .capture-instruction-text {
   color: var(--text-secondary);
-  font-size: 1rem;
+  font-size: 0.88rem;
 }
 
 /* Capture Layout */
 .capture-main-area {
   display: flex;
   flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4rem;
-  width: 95vw;
-  max-width: 1600px;
-  padding: 0 2rem;
+  align-items: stretch;
+  gap: 0;
   flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .capture-side-logo-wrap {
-  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0 0.3rem;
 }
 
 .capture-side-logo {
-  height: 270px;
+  height: 130px;
   width: auto;
+  object-fit: contain;
 }
 
 .capture-side-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
-  min-width: 300px;
+  gap: 0.8rem;
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  padding: 1.2rem 1.8rem 1.2rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  justify-content: space-between;
+  align-self: stretch;
 }
 
 /* Camera */
 .camera-container {
   position: relative;
-  width: 100%;
-  max-width: 1100px;
-  max-height: 80vh;
-  flex: 2;
-  aspect-ratio: 511 / 376;
-  border-radius: var(--radius-md);
+  flex: 0 0 auto;
+  height: calc(100% - 2.5rem);
+  width: auto;
+  aspect-ratio: 1022 / 752;
+  align-self: center;
+  margin: 1.2rem 0 1.2rem 1rem;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   border: 2px solid var(--border-strong);
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 8px 32px rgba(44, 40, 37, 0.14);
   background: #000;
 }
 
@@ -846,21 +869,21 @@ button.btn-go:focus .key-badge {
 
 /* Thumbnails */
 .thumbnails-container {
-  display: flex;
-  gap: 0.8rem;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  width: 100%;
 }
 
 .thumbnail-slot {
-  width: 90px;
+  width: 100%;
   aspect-ratio: 433 / 318;
   border-radius: 8px;
   border: 1.5px solid var(--border);
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--surface-muted);
   background-size: cover;
   background-position: center;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .thumbnail-slot.active {
@@ -930,8 +953,16 @@ button.btn-go:focus .key-badge {
 }
 
 .capture-key-hint {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
+  text-align: center;
+}
+
+/* Capture exit button — sits at bottom of panel */
+.capture-exit-btn {
+  width: 100%;
+  text-align: center;
+  margin-top: auto;
 }
 
 /* =========================================================================
@@ -1388,18 +1419,26 @@ button.btn-go:focus .key-badge {
 
   .capture-main-area {
     flex-direction: column;
-    gap: 1.5rem;
+    align-items: center;
   }
 
   .capture-side-panel {
+    width: 100%;
+    max-width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 1rem;
+    height: auto;
+    overflow: visible;
   }
 
   .camera-container {
+    width: 100%;
     max-width: 100%;
+    margin: 0.5rem;
+    align-self: auto;
   }
 }
 
@@ -1472,69 +1511,44 @@ button.btn-go:focus .key-badge {
   overflow: hidden;
 }
 
-#webcam.filter-normal { filter: none; }
-#webcam.filter-warm { filter: sepia(0.25) contrast(1.05) saturate(1.2); }
-#webcam.filter-bw { filter: grayscale(1) contrast(1.15); }
-#webcam.filter-sepia { filter: sepia(0.85) hue-rotate(-15deg) contrast(1.1); }
-#webcam.filter-pastel { filter: saturate(1.4) hue-rotate(330deg) brightness(1.05); }
-#webcam.filter-cyber { filter: contrast(1.3) hue-rotate(180deg) saturate(1.6); }
-
-.camera-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 5;
-  transition: all 0.3s ease;
-}
-
-.camera-overlay.effect-vignette {
-  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.75);
-}
-
-.camera-overlay.effect-glitter {
-  background-image: radial-gradient(#fff 1px, transparent 1px), radial-gradient(#ffe600 1.5px, transparent 1.5px);
-  background-size: 40px 40px, 60px 60px;
-  background-position: 0 0, 20px 20px;
-  opacity: 0.6;
-  animation: glitterShimmer 2s infinite linear;
-}
-
-.camera-overlay.effect-sparkles {
-  background: radial-gradient(circle at 20% 20%, rgba(255, 182, 193, 0.4), transparent 40%),
-              radial-gradient(circle at 80% 80%, rgba(255, 215, 0, 0.4), transparent 40%);
-  opacity: 0.8;
-}
-
-@keyframes glitterShimmer {
-  0% { background-position: 0 0, 20px 20px; }
-  50% { opacity: 0.8; }
-  100% { background-position: 40px 40px, 80px 80px; }
-}
+/* ---- Instagram / Snapchat–style webcam filters ---- */
+#webcam.filter-normal    { filter: none; }
+#webcam.filter-clarendon { filter: contrast(1.2) saturate(1.35) brightness(1.05); }
+#webcam.filter-juno      { filter: contrast(1.15) saturate(1.5) brightness(1.05) hue-rotate(-5deg); }
+#webcam.filter-lark       { filter: brightness(1.15) contrast(0.9) saturate(0.85); }
+#webcam.filter-gingham   { filter: brightness(1.05) sepia(0.04) contrast(0.95) saturate(0.85) hue-rotate(-10deg); }
+#webcam.filter-moon      { filter: grayscale(1) contrast(1.1) brightness(1.1); }
+#webcam.filter-bw        { filter: grayscale(1) contrast(1.2); }
+#webcam.filter-valencia  { filter: sepia(0.15) saturate(1.2) contrast(1.08) brightness(1.08) hue-rotate(-5deg); }
+#webcam.filter-nashville { filter: sepia(0.2) contrast(1.15) brightness(1.1) saturate(1.25) hue-rotate(-15deg); }
+#webcam.filter-lofi      { filter: contrast(1.4) saturate(1.1) brightness(0.95); }
+#webcam.filter-aden      { filter: brightness(1.12) saturate(0.85) contrast(0.9) hue-rotate(20deg); }
 
 /* Filter selector bar */
 .live-filters-wrap {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin-bottom: 0.6rem;
+  width: 100%;
   text-align: left;
 }
 
 .live-filters-title {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--accent-green);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
-.filter-chips-container, .effect-chips-container {
+.filter-chips-container {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
+  width: 100%;
 }
 
-.filter-chip, .effect-chip {
+.filter-chip {
   background: var(--surface-muted);
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
@@ -1546,8 +1560,8 @@ button.btn-go:focus .key-badge {
   transition: all 0.2s ease;
 }
 
-.filter-chip.active, .effect-chip.active,
-.filter-chip:hover, .effect-chip:hover {
+.filter-chip.active,
+.filter-chip:hover {
   background: var(--accent-green);
   color: #ffffff;
   border-color: var(--accent-green);

@@ -573,12 +573,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Live Filters & Studio Controls Implementation
   // =========================================================================
   let activeFilter = 'normal';
-  let activeEffect = 'none';
   let selectedFrameColor = '#ffffff';
 
   const filterChips = document.querySelectorAll('#filter-chips .filter-chip');
-  const effectChips = document.querySelectorAll('#effect-chips .effect-chip');
-  const cameraOverlay = document.getElementById('camera-overlay-effect');
   const colorDots = document.querySelectorAll('#frame-color-palette .color-dot');
   const btnSaveCustomization = document.getElementById('btn-save-customization');
 
@@ -590,18 +587,6 @@ document.addEventListener('DOMContentLoaded', () => {
       activeFilter = chip.dataset.filter;
       if (videoWebcam) {
         videoWebcam.className = `filter-${activeFilter}`;
-      }
-    });
-  });
-
-  // Overlay chips click events
-  effectChips.forEach(chip => {
-    chip.addEventListener('click', () => {
-      effectChips.forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      activeEffect = chip.dataset.effect;
-      if (cameraOverlay) {
-        cameraOverlay.className = activeEffect !== 'none' ? `camera-overlay effect-${activeEffect}` : 'camera-overlay';
       }
     });
   });
@@ -1016,19 +1001,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // Apply active live filter to canvas context before drawing
-    if (activeFilter === 'bw') {
-      ctx.filter = 'grayscale(1) contrast(1.15)';
-    } else if (activeFilter === 'warm') {
-      ctx.filter = 'sepia(0.25) contrast(1.05) saturate(1.2)';
-    } else if (activeFilter === 'sepia') {
-      ctx.filter = 'sepia(0.85) hue-rotate(-15deg) contrast(1.1)';
-    } else if (activeFilter === 'pastel') {
-      ctx.filter = 'saturate(1.4) hue-rotate(330deg) brightness(1.05)';
-    } else if (activeFilter === 'cyber') {
-      ctx.filter = 'contrast(1.3) hue-rotate(180deg) saturate(1.6)';
-    } else {
-      ctx.filter = 'none';
-    }
+    const filterMap = {
+      'normal':    'none',
+      'clarendon': 'contrast(1.2) saturate(1.35) brightness(1.05)',
+      'juno':      'contrast(1.15) saturate(1.5) brightness(1.05) hue-rotate(-5deg)',
+      'lark':      'brightness(1.15) contrast(0.9) saturate(0.85)',
+      'gingham':   'brightness(1.05) sepia(0.04) contrast(0.95) saturate(0.85) hue-rotate(-10deg)',
+      'moon':      'grayscale(1) contrast(1.1) brightness(1.1)',
+      'bw':        'grayscale(1) contrast(1.2)',
+      'valencia':  'sepia(0.15) saturate(1.2) contrast(1.08) brightness(1.08) hue-rotate(-5deg)',
+      'nashville': 'sepia(0.2) contrast(1.15) brightness(1.1) saturate(1.25) hue-rotate(-15deg)',
+      'lofi':      'contrast(1.4) saturate(1.1) brightness(0.95)',
+      'aden':      'brightness(1.12) saturate(0.85) contrast(0.9) hue-rotate(20deg)'
+    };
+    ctx.filter = filterMap[activeFilter] || 'none';
 
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);

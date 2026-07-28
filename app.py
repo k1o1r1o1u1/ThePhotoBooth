@@ -247,13 +247,20 @@ def edit_existing():
             
         collage = Image.new('RGB', (frame_w, frame_h), bg_color)
         current_y = top_margin
+        # Generate a new timestamp so this edit becomes a completely new copy in the gallery
+        new_timestamp = str(int(time.time()))
         
         images_found = False
+        import shutil
         for i in range(1, 5):
-            filepath = os.path.join(session_path, f"capture_{session_timestamp}_{i}.jpg")
-            if os.path.exists(filepath):
+            old_filepath = os.path.join(session_path, f"capture_{session_timestamp}_{i}.jpg")
+            if os.path.exists(old_filepath):
                 images_found = True
-                img = Image.open(filepath).convert('RGB')
+                # Copy the original capture to the new timestamp
+                new_filepath = os.path.join(session_path, f"capture_{new_timestamp}_{i}.jpg")
+                shutil.copy2(old_filepath, new_filepath)
+                
+                img = Image.open(old_filepath).convert('RGB')
                 scaled_img = ImageOps.fit(img, (photo_w, photo_h), Image.Resampling.LANCZOS)
                 collage.paste(scaled_img, (left_margin, current_y))
                 current_y += photo_h + gutter
@@ -264,7 +271,8 @@ def edit_existing():
         if sticker_pack and sticker_pack != 'none':
             draw_sticker_pack(collage, sticker_pack)
             
-        collage_filename = f"collage_{session_timestamp}.jpg"
+        # Save as a completely new collage
+        collage_filename = f"collage_{new_timestamp}.jpg"
         collage_filepath = os.path.join(session_path, collage_filename)
         collage.save(collage_filepath, 'JPEG', quality=100, subsampling=0)
         collage_url = f"/static/photos/{session_dir}/{collage_filename}"

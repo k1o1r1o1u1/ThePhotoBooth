@@ -1,9 +1,11 @@
 """
 Sticker Pack Renderer — draws themed decorative elements (hearts, stars, dots,
-paw prints, sparkles, bows) directly onto a PIL collage image.
+paw prints, sparkles, bows, banners, bulbs, ribbons, arrow hearts) directly
+onto a PIL collage image.
 
 Each pack is a list of sticker definitions with:
   - shape: 'heart' | 'star' | 'circle' | 'paw' | 'sparkle4' | 'diamond'
+           | 'bow' | 'banner_flag' | 'bulb' | 'ribbon' | 'arrow_heart'
   - x, y: position in pixels on the 1182×3544 frame
   - size: radius/size in pixels
   - color: RGB tuple
@@ -110,15 +112,105 @@ def _draw_bow(draw, cx, cy, size, color):
     draw.ellipse([cx - knot, cy - knot, cx + knot, cy + knot], fill=color)
 
 
+def _draw_banner_flag(draw, cx, cy, size, color, **kw):
+    """Draw a triangular pennant / bunting flag pointing downward."""
+    half_w = size * 0.75
+    height = size * 1.3
+    # Triangle pointing down
+    draw.polygon([
+        (cx - half_w, cy - height * 0.5),
+        (cx + half_w, cy - height * 0.5),
+        (cx,          cy + height * 0.5),
+    ], fill=color)
+    # Small top bar (string attachment)
+    bar_h = size * 0.18
+    draw.rectangle([cx - half_w, cy - height * 0.5 - bar_h,
+                    cx + half_w, cy - height * 0.5], fill=color)
+
+
+def _draw_bulb(draw, cx, cy, size, color, **kw):
+    """Draw a party-light bulb: round glow body + small rectangular cap."""
+    # Glow halo (lighter, larger)
+    r_glow = size * 1.1
+    glow_color = tuple(min(255, c + 80) for c in color)
+    draw.ellipse([cx - r_glow, cy - r_glow, cx + r_glow, cy + r_glow],
+                 fill=(*glow_color, 80) if len(color) == 3 else glow_color)
+    # Main bulb
+    r = size * 0.8
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=color)
+    # Cap
+    cap_w = size * 0.35
+    cap_h = size * 0.45
+    draw.rectangle([cx - cap_w, cy - r - cap_h, cx + cap_w, cy - r + 4],
+                   fill=(60, 60, 60))
+
+
+def _draw_ribbon(draw, cx, cy, size, color, **kw):
+    """Draw a decorative ribbon / double-V chevron."""
+    w = size
+    h = size * 0.55
+    # Left wing
+    draw.polygon([
+        (cx - w, cy - h),
+        (cx,     cy),
+        (cx - w, cy + h),
+        (cx - w * 0.5, cy),
+    ], fill=color)
+    # Right wing
+    draw.polygon([
+        (cx + w, cy - h),
+        (cx,     cy),
+        (cx + w, cy + h),
+        (cx + w * 0.5, cy),
+    ], fill=color)
+    # Center oval
+    cr = size * 0.22
+    draw.ellipse([cx - cr, cy - cr, cx + cr, cy + cr], fill=color)
+
+
+def _draw_arrow_heart(draw, cx, cy, size, color, **kw):
+    """Draw a heart pierced by a Cupid arrow."""
+    # Heart
+    _draw_heart(draw, cx, cy, size, color)
+    # Arrow shaft
+    arrow_color = (200, 100, 50)
+    shaft_len = size * 1.4
+    draw.line([(cx - shaft_len, cy - shaft_len * 0.5),
+               (cx + shaft_len, cy + shaft_len * 0.5)],
+              fill=arrow_color, width=max(3, int(size * 0.1)))
+    # Arrowhead
+    tip_x = cx + shaft_len
+    tip_y = cy + shaft_len * 0.5
+    head = size * 0.25
+    draw.polygon([
+        (tip_x, tip_y),
+        (tip_x - head, tip_y - head * 0.4),
+        (tip_x - head * 0.4, tip_y + head),
+    ], fill=arrow_color)
+    # Fletching (tail feathers)
+    tail_x = cx - shaft_len
+    tail_y = cy - shaft_len * 0.5
+    f = size * 0.22
+    draw.polygon([
+        (tail_x, tail_y),
+        (tail_x + f, tail_y - f),
+        (tail_x + f * 0.4, tail_y + f * 0.2),
+    ], fill=(220, 220, 180))
+
+
 # Shape dispatcher
 SHAPE_DRAWERS = {
-    'circle': _draw_circle,
-    'star': lambda draw, cx, cy, r, color, **kw: _draw_star(draw, cx, cy, r, color, rotation=kw.get('rotation', 0)),
-    'heart': _draw_heart,
-    'diamond': _draw_diamond,
-    'sparkle4': _draw_sparkle4,
-    'paw': _draw_paw,
-    'bow': _draw_bow,
+    'circle':       _draw_circle,
+    'star':         lambda draw, cx, cy, r, color, **kw: _draw_star(draw, cx, cy, r, color, rotation=kw.get('rotation', 0)),
+    'heart':        _draw_heart,
+    'diamond':      _draw_diamond,
+    'sparkle4':     _draw_sparkle4,
+    'paw':          _draw_paw,
+    'bow':          _draw_bow,
+    'banner_flag':  _draw_banner_flag,
+    'bulb':         _draw_bulb,
+    'ribbon':       _draw_ribbon,
+    'arrow_heart':  _draw_arrow_heart,
 }
 
 
@@ -311,6 +403,121 @@ STICKER_PACKS = {
         {'shape': 'heart', 'x': _photo_corner(3, 'tl')[0], 'y': _photo_corner(3, 'tl')[1], 'size': 44, 'color': (255, 20, 147)},
         {'shape': 'circle', 'x': _photo_corner(1, 'tl')[0], 'y': _photo_corner(1, 'tl')[1], 'size': 22, 'color': (180, 255, 20)},
         {'shape': 'circle', 'x': _photo_corner(3, 'br')[0], 'y': _photo_corner(3, 'br')[1], 'size': 24, 'color': (0, 191, 255)},
+    ],
+
+    # ── PARTY BANNERS ─────────────────────────────────────────────────────────
+    # Festive pennant flags strung across margins + confetti circles
+    'party_banners': [
+        # Top banner string of flags
+        {'shape': 'banner_flag', 'x': 40,              'y': PHOTO_TOPS[0] - 30, 'size': 44, 'color': (255, 80,  120)},
+        {'shape': 'banner_flag', 'x': FRAME_W // 4,    'y': PHOTO_TOPS[0] - 25, 'size': 40, 'color': (255, 195, 0)},
+        {'shape': 'banner_flag', 'x': FRAME_W // 2,    'y': PHOTO_TOPS[0] - 30, 'size': 44, 'color': (60,  180, 255)},
+        {'shape': 'banner_flag', 'x': FRAME_W * 3//4,  'y': PHOTO_TOPS[0] - 25, 'size': 40, 'color': (120, 220, 80)},
+        {'shape': 'banner_flag', 'x': FRAME_W - 40,    'y': PHOTO_TOPS[0] - 30, 'size': 44, 'color': (200, 80,  255)},
+        # Gutter 0 flags
+        {'shape': 'banner_flag', 'x': 40,              'y': _gutter_y(0), 'size': 40, 'color': (60,  180, 255)},
+        {'shape': 'banner_flag', 'x': FRAME_W // 3,    'y': _gutter_y(0), 'size': 44, 'color': (255, 80,  120)},
+        {'shape': 'banner_flag', 'x': FRAME_W * 2//3,  'y': _gutter_y(0), 'size': 40, 'color': (255, 195, 0)},
+        {'shape': 'banner_flag', 'x': FRAME_W - 40,    'y': _gutter_y(0), 'size': 44, 'color': (120, 220, 80)},
+        # Gutter 1 flags
+        {'shape': 'banner_flag', 'x': 40,              'y': _gutter_y(1), 'size': 40, 'color': (200, 80,  255)},
+        {'shape': 'banner_flag', 'x': FRAME_W // 2,    'y': _gutter_y(1), 'size': 44, 'color': (255, 80,  120)},
+        {'shape': 'banner_flag', 'x': FRAME_W - 40,    'y': _gutter_y(1), 'size': 40, 'color': (60,  180, 255)},
+        # Gutter 2 flags
+        {'shape': 'banner_flag', 'x': 40,              'y': _gutter_y(2), 'size': 42, 'color': (255, 195, 0)},
+        {'shape': 'banner_flag', 'x': FRAME_W // 3,    'y': _gutter_y(2), 'size': 40, 'color': (120, 220, 80)},
+        {'shape': 'banner_flag', 'x': FRAME_W * 2//3,  'y': _gutter_y(2), 'size': 42, 'color': (200, 80,  255)},
+        {'shape': 'banner_flag', 'x': FRAME_W - 40,    'y': _gutter_y(2), 'size': 40, 'color': (255, 80,  120)},
+        # Bottom strip
+        {'shape': 'banner_flag', 'x': FRAME_W // 4,    'y': PHOTO_BOTTOMS[3] + 35, 'size': 44, 'color': (60,  180, 255)},
+        {'shape': 'banner_flag', 'x': FRAME_W // 2,    'y': PHOTO_BOTTOMS[3] + 30, 'size': 40, 'color': (255, 80,  120)},
+        {'shape': 'banner_flag', 'x': FRAME_W * 3//4,  'y': PHOTO_BOTTOMS[3] + 35, 'size': 44, 'color': (255, 195, 0)},
+        # Confetti dots on photo corners
+        {'shape': 'circle', 'x': _photo_corner(0, 'tl')[0], 'y': _photo_corner(0, 'tl')[1], 'size': 22, 'color': (255, 80,  120)},
+        {'shape': 'circle', 'x': _photo_corner(0, 'tr')[0], 'y': _photo_corner(0, 'tr')[1], 'size': 20, 'color': (255, 195, 0)},
+        {'shape': 'circle', 'x': _photo_corner(1, 'bl')[0], 'y': _photo_corner(1, 'bl')[1], 'size': 22, 'color': (60,  180, 255)},
+        {'shape': 'circle', 'x': _photo_corner(2, 'tr')[0], 'y': _photo_corner(2, 'tr')[1], 'size': 20, 'color': (120, 220, 80)},
+        {'shape': 'circle', 'x': _photo_corner(3, 'br')[0], 'y': _photo_corner(3, 'br')[1], 'size': 22, 'color': (200, 80,  255)},
+        {'shape': 'star',   'x': _photo_corner(1, 'tr')[0], 'y': _photo_corner(1, 'tr')[1], 'size': 30, 'color': (255, 195, 0), 'rotation': 20},
+        {'shape': 'star',   'x': _photo_corner(3, 'tl')[0], 'y': _photo_corner(3, 'tl')[1], 'size': 28, 'color': (255, 80,  120), 'rotation': -15},
+    ],
+
+    # ── PARTY LIGHTS ──────────────────────────────────────────────────────────
+    # Colorful glowing bulbs strung across gutters like fairy lights
+    'party_lights': [
+        # Top strip bulbs
+        {'shape': 'bulb', 'x': 45,              'y': PHOTO_TOPS[0] - 20, 'size': 28, 'color': (255, 80,  80)},
+        {'shape': 'bulb', 'x': FRAME_W // 5,    'y': PHOTO_TOPS[0] - 22, 'size': 26, 'color': (255, 200, 0)},
+        {'shape': 'bulb', 'x': FRAME_W * 2//5,  'y': PHOTO_TOPS[0] - 20, 'size': 28, 'color': (80,  200, 120)},
+        {'shape': 'bulb', 'x': FRAME_W * 3//5,  'y': PHOTO_TOPS[0] - 22, 'size': 26, 'color': (80,  140, 255)},
+        {'shape': 'bulb', 'x': FRAME_W * 4//5,  'y': PHOTO_TOPS[0] - 20, 'size': 28, 'color': (200, 80,  255)},
+        {'shape': 'bulb', 'x': FRAME_W - 45,    'y': PHOTO_TOPS[0] - 22, 'size': 26, 'color': (255, 140, 0)},
+        # Gutter 0
+        {'shape': 'bulb', 'x': 42,              'y': _gutter_y(0), 'size': 28, 'color': (80,  140, 255)},
+        {'shape': 'bulb', 'x': FRAME_W // 4,    'y': _gutter_y(0), 'size': 26, 'color': (255, 80,  80)},
+        {'shape': 'bulb', 'x': FRAME_W // 2,    'y': _gutter_y(0), 'size': 28, 'color': (80,  200, 120)},
+        {'shape': 'bulb', 'x': FRAME_W * 3//4,  'y': _gutter_y(0), 'size': 26, 'color': (200, 80,  255)},
+        {'shape': 'bulb', 'x': FRAME_W - 42,    'y': _gutter_y(0), 'size': 28, 'color': (255, 200, 0)},
+        # Gutter 1
+        {'shape': 'bulb', 'x': 42,              'y': _gutter_y(1), 'size': 28, 'color': (255, 140, 0)},
+        {'shape': 'bulb', 'x': FRAME_W // 3,    'y': _gutter_y(1), 'size': 26, 'color': (80,  140, 255)},
+        {'shape': 'bulb', 'x': FRAME_W * 2//3,  'y': _gutter_y(1), 'size': 28, 'color': (255, 80,  80)},
+        {'shape': 'bulb', 'x': FRAME_W - 42,    'y': _gutter_y(1), 'size': 26, 'color': (80,  200, 120)},
+        # Gutter 2
+        {'shape': 'bulb', 'x': 42,              'y': _gutter_y(2), 'size': 28, 'color': (200, 80,  255)},
+        {'shape': 'bulb', 'x': FRAME_W // 4,    'y': _gutter_y(2), 'size': 26, 'color': (255, 200, 0)},
+        {'shape': 'bulb', 'x': FRAME_W // 2,    'y': _gutter_y(2), 'size': 28, 'color': (255, 80,  80)},
+        {'shape': 'bulb', 'x': FRAME_W * 3//4,  'y': _gutter_y(2), 'size': 26, 'color': (80,  140, 255)},
+        {'shape': 'bulb', 'x': FRAME_W - 42,    'y': _gutter_y(2), 'size': 28, 'color': (80,  200, 120)},
+        # Bottom strip
+        {'shape': 'bulb', 'x': 45,              'y': PHOTO_BOTTOMS[3] + 30, 'size': 28, 'color': (255, 200, 0)},
+        {'shape': 'bulb', 'x': FRAME_W // 3,    'y': PHOTO_BOTTOMS[3] + 28, 'size': 26, 'color': (255, 80,  80)},
+        {'shape': 'bulb', 'x': FRAME_W * 2//3,  'y': PHOTO_BOTTOMS[3] + 30, 'size': 28, 'color': (200, 80,  255)},
+        {'shape': 'bulb', 'x': FRAME_W - 45,    'y': PHOTO_BOTTOMS[3] + 28, 'size': 26, 'color': (80,  140, 255)},
+        # Sparkle accents on photo corners
+        {'shape': 'sparkle4', 'x': _photo_corner(0, 'tl')[0], 'y': _photo_corner(0, 'tl')[1], 'size': 28, 'color': (255, 220, 80)},
+        {'shape': 'sparkle4', 'x': _photo_corner(1, 'br')[0], 'y': _photo_corner(1, 'br')[1], 'size': 28, 'color': (80,  200, 255)},
+        {'shape': 'sparkle4', 'x': _photo_corner(2, 'tl')[0], 'y': _photo_corner(2, 'tl')[1], 'size': 26, 'color': (255, 120, 80)},
+        {'shape': 'sparkle4', 'x': _photo_corner(3, 'tr')[0], 'y': _photo_corner(3, 'tr')[1], 'size': 28, 'color': (200, 80,  255)},
+    ],
+
+    # ── LOVE THEME ────────────────────────────────────────────────────────────
+    # Romantic: large hearts, cupid arrows, ribbons, rose-toned sparkles
+    'love_theme': [
+        # Margin / gutter — big romantic hearts
+        {'shape': 'heart',       'x': 45,              'y': PHOTO_TOPS[0] - 22, 'size': 52, 'color': (220, 40,  80)},
+        {'shape': 'ribbon',      'x': FRAME_W // 2,    'y': PHOTO_TOPS[0] - 20, 'size': 44, 'color': (255, 120, 160)},
+        {'shape': 'heart',       'x': FRAME_W - 45,    'y': PHOTO_TOPS[0] - 18, 'size': 48, 'color': (255, 80,  120)},
+        # Gutter 0
+        {'shape': 'heart',       'x': 42,              'y': _gutter_y(0), 'size': 46, 'color': (255, 80,  120)},
+        {'shape': 'sparkle4',    'x': FRAME_W // 3,    'y': _gutter_y(0), 'size': 32, 'color': (255, 190, 210)},
+        {'shape': 'heart',       'x': FRAME_W // 2,    'y': _gutter_y(0), 'size': 50, 'color': (220, 40,  80)},
+        {'shape': 'sparkle4',    'x': FRAME_W * 2//3,  'y': _gutter_y(0), 'size': 30, 'color': (255, 190, 210)},
+        {'shape': 'heart',       'x': FRAME_W - 42,    'y': _gutter_y(0), 'size': 44, 'color': (255, 80,  120)},
+        # Gutter 1
+        {'shape': 'ribbon',      'x': 42,              'y': _gutter_y(1), 'size': 42, 'color': (220, 40,  80)},
+        {'shape': 'heart',       'x': FRAME_W // 2,    'y': _gutter_y(1), 'size': 52, 'color': (255, 80,  120)},
+        {'shape': 'ribbon',      'x': FRAME_W - 42,    'y': _gutter_y(1), 'size': 42, 'color': (220, 40,  80)},
+        # Gutter 2
+        {'shape': 'heart',       'x': 42,              'y': _gutter_y(2), 'size': 48, 'color': (220, 40,  80)},
+        {'shape': 'sparkle4',    'x': FRAME_W // 2,    'y': _gutter_y(2), 'size': 34, 'color': (255, 190, 210)},
+        {'shape': 'heart',       'x': FRAME_W - 42,    'y': _gutter_y(2), 'size': 46, 'color': (255, 80,  120)},
+        # Bottom strip
+        {'shape': 'heart',       'x': 48,              'y': PHOTO_BOTTOMS[3] + 32, 'size': 52, 'color': (255, 80,  120)},
+        {'shape': 'ribbon',      'x': FRAME_W // 2,    'y': PHOTO_BOTTOMS[3] + 30, 'size': 46, 'color': (220, 40,  80)},
+        {'shape': 'heart',       'x': FRAME_W - 48,    'y': PHOTO_BOTTOMS[3] + 32, 'size': 50, 'color': (255, 80,  120)},
+        # Cupid arrows on photos (corner accents)
+        {'shape': 'arrow_heart', 'x': _photo_corner(0, 'tl')[0], 'y': _photo_corner(0, 'tl')[1], 'size': 38, 'color': (255, 80,  120)},
+        {'shape': 'heart',       'x': _photo_corner(0, 'br')[0], 'y': _photo_corner(0, 'br')[1], 'size': 36, 'color': (220, 40,  80)},
+        {'shape': 'arrow_heart', 'x': _photo_corner(1, 'tr')[0], 'y': _photo_corner(1, 'tr')[1], 'size': 36, 'color': (255, 100, 140)},
+        {'shape': 'heart',       'x': _photo_corner(2, 'bl')[0], 'y': _photo_corner(2, 'bl')[1], 'size': 38, 'color': (255, 80,  120)},
+        {'shape': 'arrow_heart', 'x': _photo_corner(3, 'tr')[0], 'y': _photo_corner(3, 'tr')[1], 'size': 36, 'color': (220, 40,  80)},
+        {'shape': 'ribbon',      'x': _photo_corner(3, 'bl')[0], 'y': _photo_corner(3, 'bl')[1], 'size': 34, 'color': (255, 140, 170)},
+        # Rose-gold sparkle scatter
+        {'shape': 'sparkle4', 'x': FRAME_W // 4,   'y': PHOTO_TOPS[0] - 15, 'size': 26, 'color': (255, 190, 210)},
+        {'shape': 'sparkle4', 'x': FRAME_W * 3//4, 'y': PHOTO_TOPS[0] - 12, 'size': 24, 'color': (255, 160, 190)},
+        {'shape': 'circle',   'x': FRAME_W // 3,   'y': _gutter_y(2) + 20, 'size': 14, 'color': (255, 200, 220)},
+        {'shape': 'circle',   'x': FRAME_W * 2//3, 'y': _gutter_y(1) - 20, 'size': 12, 'color': (255, 200, 220)},
     ],
 }
 
