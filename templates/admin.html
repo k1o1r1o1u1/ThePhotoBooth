@@ -94,17 +94,10 @@
 
             <div class="control-group">
               <label class="control-label" style="font-size: 0.8rem; margin-bottom: 0.3rem; display: block;">🎀 Sticker Packs</label>
-              <div class="sticker-packs-grid" id="sticker-packs-grid" style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
-                <button class="pack-btn active" data-pack="none" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">No Stickers</button>
-                <button class="pack-btn" data-pack="girlypop" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">💕 Girlypop</button>
-                <button class="pack-btn" data-pack="cute_stars" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">⭐ Cute Stars</button>
-                <button class="pack-btn" data-pack="kawaii_paws" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">🐾 Kawaii Paws</button>
-                <button class="pack-btn" data-pack="party_confetti" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">🎉 Party Confetti</button>
-                <button class="pack-btn" data-pack="dreamy_sparkle" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">✨ Dreamy Sparkle</button>
-                <button class="pack-btn" data-pack="y2k_vibes" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">💖 Y2K</button>
-                <button class="pack-btn" data-pack="party_banners" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">🎊 Banners</button>
-                <button class="pack-btn" data-pack="party_lights" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">💡 Lights</button>
-                <button class="pack-btn" data-pack="love_theme" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-primary); cursor: pointer;">💘 Love</button>
+              <div class="sticker-packs-grid" id="sticker-packs-grid">
+                {% for pack_id, pack_name in sticker_packs %}
+                <button class="pack-btn{% if pack_id == 'none' %} active{% endif %}" data-pack="{{ pack_id }}">{{ pack_name }}</button>
+                {% endfor %}
               </div>
             </div>
           </div>

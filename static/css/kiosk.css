@@ -715,7 +715,7 @@ button.btn-go:focus .key-badge {
 }
 
 .capture-top {
-  padding: 0.6rem 2rem;
+  padding: 0.35rem 2rem 0.4rem;
   background: var(--bg-primary);
   text-align: center;
   flex-shrink: 0;
@@ -737,8 +737,8 @@ button.btn-go:focus .key-badge {
 
 /* Capture Layout */
 .capture-main-area {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 21vw, 390px);
   align-items: stretch;
   gap: 0;
   flex: 1;
@@ -750,11 +750,11 @@ button.btn-go:focus .key-badge {
 .capture-side-logo-wrap {
   display: flex;
   justify-content: center;
-  padding: 0.5rem 0 0.3rem;
+  padding: 0;
 }
 
 .capture-side-logo {
-  height: 130px;
+  height: clamp(144px, 20vh, 220px);
   width: auto;
   object-fit: contain;
 }
@@ -763,15 +763,13 @@ button.btn-go:focus .key-badge {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.8rem;
-  flex: 1;
-  min-width: 220px;
-  max-width: 380px;
-  flex-shrink: 0;
+  box-sizing: border-box;
+  gap: clamp(0.4rem, 1vh, 0.65rem);
+  min-width: 0;
   background: var(--surface);
   border-left: 1px solid var(--border);
-  padding: 1.2rem 1.8rem 1.2rem;
-  overflow-y: auto;
+  padding: clamp(0.55rem, 1.2vh, 0.85rem) clamp(0.75rem, 1.5vw, 1.1rem);
+  overflow-y: hidden;
   overflow-x: hidden;
   justify-content: space-between;
   align-self: stretch;
@@ -781,11 +779,15 @@ button.btn-go:focus .key-badge {
 .camera-container {
   position: relative;
   flex: 0 0 auto;
-  height: calc(100% - 2.5rem);
+  height: calc(100% - 1.25rem);
   width: auto;
+  /* This is the exact ratio used by each image in the printed photostrip.
+     A 16:9 GoPro stream is cropped with object-fit: cover, so the preview
+     shows precisely what will be captured and placed in the collage. */
   aspect-ratio: 1022 / 752;
   align-self: center;
-  margin: 1.2rem 0 1.2rem 1rem;
+  justify-self: center;
+  margin: 0.625rem;
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 2px solid var(--border-strong);
@@ -871,13 +873,13 @@ button.btn-go:focus .key-badge {
 .thumbnails-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.55rem;
+  gap: 0.45rem;
   width: 100%;
 }
 
 .thumbnail-slot {
   width: 100%;
-  aspect-ratio: 433 / 318;
+  aspect-ratio: 1022 / 752;
   border-radius: 8px;
   border: 1.5px solid var(--border);
   background: var(--surface-muted);
@@ -896,12 +898,12 @@ button.btn-go:focus .key-badge {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.35rem;
 }
 
 .capture-trigger {
-  width: 88px;
-  height: 88px;
+  width: clamp(64px, 8vh, 82px);
+  height: clamp(64px, 8vh, 82px);
   border-radius: 50%;
   background: var(--surface);
   border: 3px solid var(--border-strong);
@@ -953,7 +955,8 @@ button.btn-go:focus .key-badge {
 }
 
 .capture-key-hint {
-  font-size: 0.8rem;
+  margin: 0;
+  font-size: 0.75rem;
   color: var(--text-muted);
   text-align: center;
 }
@@ -969,26 +972,28 @@ button.btn-go:focus .key-badge {
    REVIEW SCREEN (Screen 5) – fit to viewport, no scroll
    ========================================================================= */
 .screen-review-layout {
-  padding: 1rem 2rem;
+  padding: clamp(0.5rem, 1.2vh, 1rem) clamp(1rem, 3vw, 2.5rem);
   overflow: hidden;
 }
 
 .review-compact {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(420px, 520px);
   align-items: center;
   justify-content: center;
-  gap: 4rem;
+  gap: clamp(2rem, 5vw, 4.5rem);
   width: 100%;
   height: 100%;
   max-height: 100vh;
+  margin: 0 auto;
 }
 
 .review-left {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 90vh;
+  height: min(90vh, calc(100vh - 1.5rem));
+  min-width: 0;
 }
 
 .collage-display-fit {
@@ -1019,22 +1024,36 @@ button.btn-go:focus .key-badge {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 0.8rem;
-  width: 440px;
+  gap: clamp(0.45rem, 1vh, 0.7rem);
+  width: 100%;
+  max-width: 520px;
   text-align: left;
 }
 
 .review-logo-wrap {
-  margin-bottom: 0.5rem;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 0;
+}
+
+.review-logo-img {
+  height: clamp(210px, 26vh, 290px);
+  margin-bottom: 0;
+}
+
+.review-right .welcome-title {
+  margin: 0;
+  line-height: 1.1;
 }
 
 .review-actions-compact {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.6rem;
+  gap: 0.5rem;
   width: 100%;
-  margin-top: 1rem;
+  margin-top: 0.35rem;
 }
 
 .review-badge {
@@ -1125,23 +1144,23 @@ button.btn-go:focus .key-badge {
 }
 
 .gallery-shell {
-  width: min(1200px, 100%);
+  width: min(1540px, 100%);
   height: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
   min-height: 0;
+  margin: 0 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 .gallery-content {
   width: 100%;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
+  flex: 0 0 auto;
+  min-height: auto;
+  overflow: visible;
 }
 
 .gallery-header {
@@ -1183,17 +1202,14 @@ button.btn-go:focus .key-badge {
 }
 
 .gallery-content {
-  flex: 1;
-  min-height: 0;
   display: block;
-  overflow-y: auto;
 }
 
 .gallery-sessions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   grid-auto-rows: auto;
-  gap: 1rem;
+  gap: clamp(1rem, 2vw, 1.75rem);
   width: 100%;
   overflow: visible;
   padding-bottom: 1rem;
@@ -1207,17 +1223,25 @@ button.btn-go:focus .key-badge {
 .gallery-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 0.9rem 0.9rem;
+  border-radius: var(--radius-lg);
+  padding: clamp(0.8rem, 1.2vw, 1.1rem);
   text-align: left;
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  flex: 0 0 auto;
-  width: 160px;
+  gap: 0;
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
+.gallery-card:hover,
+.gallery-card:focus-visible {
+  transform: translateY(-5px);
+  border-color: var(--accent-coral);
+  box-shadow: var(--shadow-card);
+  outline: none;
+}
 
 .gallery-card h3 {
   font-family: var(--font-display);
@@ -1283,7 +1307,7 @@ button.btn-go:focus .key-badge {
   padding: 8px;
   box-shadow: 0 6px 18px rgba(44,40,37,0.06);
   border: 1px solid rgba(0,0,0,0.03);
-  width: 110px;
+  width: min(100%, 250px);
   margin: 0 auto;
 }
 
@@ -1304,8 +1328,9 @@ button.btn-go:focus .key-badge {
 
 .photostrip-collage {
   width: 100%;
-  height: 240px;
-  object-fit: cover;
+  height: auto;
+  aspect-ratio: 1182 / 3544;
+  object-fit: contain;
   border-radius: 8px;
   border: 1px solid var(--border);
 }
@@ -1418,11 +1443,13 @@ button.btn-go:focus .key-badge {
   }
 
   .capture-main-area {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    overflow-y: auto;
     align-items: center;
   }
 
   .capture-side-panel {
+    grid-row: 2;
     width: 100%;
     max-width: 100%;
     border-left: none;
@@ -1435,7 +1462,8 @@ button.btn-go:focus .key-badge {
   }
 
   .camera-container {
-    width: 100%;
+    width: min(calc(100% - 1rem), 100vw);
+    height: auto;
     max-width: 100%;
     margin: 0.5rem;
     align-self: auto;

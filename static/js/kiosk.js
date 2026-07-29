@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const imgCollagePreview = document.getElementById('collage-preview');
   const btnTakeMore = document.getElementById('btn-take-more');
   const btnGotoGallery = document.getElementById('btn-goto-gallery');
-  const btnReviewHome = document.getElementById('btn-review-home');
   const btnCaptureExit = document.getElementById('btn-capture-exit');
 
   const gallerySessionsContainer = document.getElementById('gallery-sessions-container');
@@ -349,18 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
   btnGotoGallery.addEventListener('click', () => loadGallery());
 
   // Review → Start Over
-  if (btnReviewHome) {
-    btnReviewHome.addEventListener('click', () => {
-      if (isEditingGallerySession) {
-        isEditingGallerySession = false;
-        currentGallerySessionTimestamp = null;
-        loadGallery();
-      } else {
-        showScreen(screenDashboard);
-      }
-    });
-  }
-
   // Capture → Cancel/Exit
   if (btnCaptureExit) {
     btnCaptureExit.addEventListener('click', () => {
@@ -412,9 +399,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const requestId = ++webcamStreamRequestId;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1920, max: 3840 },
-          height: { ideal: 1080, max: 2160 },
-          facingMode: 'user'
+          // Prefer the highest profile exposed by an external camera (such as
+          // GoPro Webcam). "ideal" gracefully falls back to the highest
+          // profile the camera offers when 4K is unavailable.
+          width: { ideal: 3840 },
+          height: { ideal: 2160 },
+          aspectRatio: { ideal: 16 / 9 },
+          frameRate: { ideal: 30 },
+          resizeMode: 'none'
         },
         audio: false
       });
@@ -425,6 +417,8 @@ document.addEventListener('DOMContentLoaded', () => {
       webcamStream = stream;
       if (videoWebcam) {
         videoWebcam.srcObject = webcamStream;
+        const settings = webcamStream.getVideoTracks()[0]?.getSettings();
+        console.info('Webcam stream:', `${settings?.width || '?'}x${settings?.height || '?'}`, `${settings?.frameRate || '?'} fps`);
         // try to play — ignore promise rejection that occurs when autoplay is blocked
         videoWebcam.play().catch(() => {});
       }
@@ -434,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Allow Enter/Space on all focusable action buttons
-  [btnNewSession, btnTakeMore, btnGotoGallery, btnReviewHome].forEach(el => {
+  [btnNewSession].forEach(el => {
     if (!el) return;
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -837,6 +831,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function addGalleryCard(imgUrl) {
       const card = document.createElement('div');
       card.className = 'gallery-card';
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', 'Open photostrip preview');
 
       const stripFrame = document.createElement('div');
       stripFrame.className = 'photostrip-frame';
@@ -848,7 +845,14 @@ document.addEventListener('DOMContentLoaded', () => {
       img.src = imgUrl + '?t=' + Date.now();
       img.alt = 'Collage';
       img.className = 'photostrip-collage';
-      img.addEventListener('click', () => openLightbox(img.src));
+      const openPreview = () => openLightbox(img.src);
+      card.addEventListener('click', openPreview);
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openPreview();
+        }
+      });
       strip.appendChild(img);
 
       stripFrame.appendChild(strip);
@@ -861,8 +865,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // GLOBAL KEYBOARD SHORTCUTS
   // =========================================================================
   document.addEventListener('keydown', (e) => {
-    // Don't intercept when typing in an input (except Escape), but allow hidden admin shortcuts.
-    if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')
+    // Don't intercept while entering text (except Escape), but a colour input
+    // on the review screen should not trap the Save shortcut.
+    const isTextEntry = e.target.tagName === 'TEXTAREA'
+      || (e.target.tagName === 'INPUT' && e.target.type !== 'color');
+    if (isTextEntry
       && e.key !== 'Escape'
       && !(e.ctrlKey && (e.key === 'F2' || e.key === 'F3'))
     ) return;
@@ -922,15 +929,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- REVIEW SCREEN ----
     else if (currentScreen === screenReview) {
-      if (e.key === 'n' || e.key === 'N') {
+      // Keep shortcuts screen-wide even after a frame or sticker control
+      // retains keyboard focus.
+      if (e.key === 'Enter') {
         e.preventDefault();
-        btnTakeMore.click();
+        btnSaveCustomization.click();
       } else if (e.key === 'g' || e.key === 'G') {
         e.preventDefault();
         btnGotoGallery.click();
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        if (btnReviewHome) btnReviewHome.click();
+        btnTakeMore.click();
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
         e.preventDefault();
         navigateReviewButtons(-1);
@@ -956,7 +965,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Arrow-navigate through review action buttons
-  const reviewButtons = [btnTakeMore, btnGotoGallery, btnReviewHome].filter(Boolean);
+  const reviewButtons = [btnSaveCustomization, btnTakeMore, btnGotoGallery].filter(Boolean);
   function navigateReviewButtons(direction) {
     const currentIdx = reviewButtons.findIndex(b => b === document.activeElement);
     let newIdx = currentIdx + direction;
@@ -1022,8 +1031,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function captureSnapshot() {
     const canvas = document.createElement('canvas');
-    canvas.width = videoWebcam.videoWidth || 640;
-    canvas.height = videoWebcam.videoHeight || 480;
+    const sourceWidth = videoWebcam.videoWidth || 1280;
+    const sourceHeight = videoWebcam.videoHeight || 960;
+    // Keep every saved capture at the same landscape ratio as a single
+    // collage slot (1022 x 752). This also matches the cropped live preview.
+    const collageImageRatio = 1022 / 752;
+    let cropWidth = sourceWidth;
+    let cropHeight = sourceHeight;
+    if (sourceWidth / sourceHeight > collageImageRatio) {
+      cropWidth = Math.round(sourceHeight * collageImageRatio);
+    } else {
+      cropHeight = Math.round(sourceWidth / collageImageRatio);
+    }
+    const cropX = Math.round((sourceWidth - cropWidth) / 2);
+    const cropY = Math.round((sourceHeight - cropHeight) / 2);
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
     const ctx = canvas.getContext('2d');
 
     // Apply active live filter to canvas context before drawing
@@ -1044,7 +1067,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(videoWebcam, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(
+      videoWebcam,
+      cropX, cropY, cropWidth, cropHeight,
+      0, 0, canvas.width, canvas.height
+    );
     return canvas.toDataURL('image/jpeg', 1.0);
   }
 

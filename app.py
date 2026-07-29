@@ -6,7 +6,7 @@ from datetime import timedelta
 from flask import Flask, request, jsonify, render_template, session
 from PIL import Image, ImageOps, ImageFilter
 from io import BytesIO
-from sticker_packs import draw_sticker_pack, STICKER_PACKS
+from sticker_packs import draw_sticker_pack, STICKER_PACK_OPTIONS
 
 app = Flask(__name__)
 # Secure secret key for session management – persists across restarts
@@ -33,11 +33,11 @@ def sanitize_filename(name: str) -> str:
 
 @app.route('/')
 def kiosk():
-    return render_template('kiosk.html')
+    return render_template('kiosk.html', sticker_packs=STICKER_PACK_OPTIONS)
 
 @app.route('/admin')
 def admin():
-    return render_template('admin.html')
+    return render_template('admin.html', sticker_packs=STICKER_PACK_OPTIONS)
 
 # ---------------------------------------------------------------------------
 # Session handling – the kiosk start endpoint also acts as a login

@@ -13,6 +13,7 @@ Each pack is a list of sticker definitions with:
 """
 
 import math
+import random
 from PIL import ImageDraw
 
 # ── Collage geometry constants (must match app.py) ──────────────────────────
@@ -521,9 +522,155 @@ STICKER_PACKS = {
     ],
 }
 
+# This catalogue is intentionally shared by the kiosk and admin templates.
+# Keep the display metadata beside the renderer so a new pack cannot appear in
+# one editor without being available in the other.
+STICKER_PACK_OPTIONS = [
+    ('none', 'No Stickers'),
+    ('girlypop', '💕 Girlypop'),
+    ('cute_stars', '⭐ Cute Stars'),
+    ('kawaii_paws', '🐾 Kawaii Paws'),
+    ('party_confetti', '🎉 Party Confetti'),
+    ('dreamy_sparkle', '✨ Dreamy Sparkle'),
+    ('y2k_vibes', '💖 Y2K Vibes'),
+    ('party_banners', '🎏 Party Banners'),
+    ('party_lights', '💡 Party Lights'),
+    ('love_theme', '❤️ Love Theme'),
+    ('cosmic_dream', '🌌 Cosmic Dream'),
+    ('tropical_pop', '🌺 Tropical Pop'),
+    ('neon_arcade', '🕹️ Neon Arcade'),
+    ('golden_hour', '🌅 Golden Hour'),
+]
+
+# Additional, high-contrast packs. The repeated gutter positions keep the
+# photostrip polished while the photo-corner accents add personality.
+STICKER_PACKS.update({
+    'cosmic_dream': [
+        *[{'shape': 'star', 'x': x, 'y': y, 'size': size, 'color': color, 'rotation': rot}
+          for x, y, size, color, rot in [
+              (45, PHOTO_TOPS[0] - 22, 42, (120, 90, 255), 15),
+              (FRAME_W // 2, _gutter_y(0), 46, (255, 220, 90), -10),
+              (FRAME_W - 45, _gutter_y(1), 42, (95, 190, 255), 20),
+              (FRAME_W // 2, _gutter_y(2), 44, (190, 100, 255), 0),
+              (45, PHOTO_BOTTOMS[3] + 30, 40, (255, 220, 90), 25),
+          ]],
+        *[{'shape': 'sparkle4', 'x': x, 'y': y, 'size': 30, 'color': color}
+          for x, y, color in [
+              (FRAME_W - 45, PHOTO_TOPS[0] - 20, (220, 180, 255)),
+              (45, _gutter_y(0), (120, 220, 255)),
+              (FRAME_W - 45, _gutter_y(2), (255, 190, 240)),
+              (FRAME_W - 45, PHOTO_BOTTOMS[3] + 30, (180, 150, 255)),
+          ]],
+        {'shape': 'diamond', 'x': _photo_corner(0, 'tr')[0], 'y': _photo_corner(0, 'tr')[1], 'size': 32, 'color': (255, 230, 120)},
+        {'shape': 'diamond', 'x': _photo_corner(1, 'bl')[0], 'y': _photo_corner(1, 'bl')[1], 'size': 30, 'color': (150, 210, 255)},
+        {'shape': 'diamond', 'x': _photo_corner(2, 'tr')[0], 'y': _photo_corner(2, 'tr')[1], 'size': 32, 'color': (220, 160, 255)},
+        {'shape': 'diamond', 'x': _photo_corner(3, 'bl')[0], 'y': _photo_corner(3, 'bl')[1], 'size': 30, 'color': (255, 230, 120)},
+    ],
+    'tropical_pop': [
+        *[{'shape': 'circle', 'x': x, 'y': y, 'size': size, 'color': color}
+          for x, y, size, color in [
+              (45, PHOTO_TOPS[0] - 22, 28, (255, 100, 150)),
+              (FRAME_W // 2, _gutter_y(0), 30, (255, 210, 60)),
+              (FRAME_W - 45, _gutter_y(1), 28, (60, 210, 170)),
+              (FRAME_W // 2, _gutter_y(2), 30, (255, 120, 70)),
+              (45, PHOTO_BOTTOMS[3] + 30, 28, (80, 190, 255)),
+          ]],
+        *[{'shape': 'star', 'x': x, 'y': y, 'size': 38, 'color': color, 'rotation': 18}
+          for x, y, color in [
+              (FRAME_W - 45, PHOTO_TOPS[0] - 20, (255, 220, 70)),
+              (45, _gutter_y(1), (255, 100, 150)),
+              (FRAME_W - 45, _gutter_y(2), (60, 210, 170)),
+              (FRAME_W - 45, PHOTO_BOTTOMS[3] + 30, (255, 130, 80)),
+          ]],
+        {'shape': 'heart', 'x': _photo_corner(0, 'tl')[0], 'y': _photo_corner(0, 'tl')[1], 'size': 36, 'color': (255, 100, 150)},
+        {'shape': 'heart', 'x': _photo_corner(1, 'br')[0], 'y': _photo_corner(1, 'br')[1], 'size': 36, 'color': (255, 140, 80)},
+        {'shape': 'heart', 'x': _photo_corner(2, 'tl')[0], 'y': _photo_corner(2, 'tl')[1], 'size': 36, 'color': (60, 210, 170)},
+        {'shape': 'heart', 'x': _photo_corner(3, 'br')[0], 'y': _photo_corner(3, 'br')[1], 'size': 36, 'color': (255, 210, 60)},
+    ],
+    'neon_arcade': [
+        *[{'shape': 'diamond', 'x': x, 'y': y, 'size': 42, 'color': color}
+          for x, y, color in [
+              (45, PHOTO_TOPS[0] - 20, (0, 245, 255)),
+              (FRAME_W // 2, _gutter_y(0), (255, 50, 180)),
+              (FRAME_W - 45, _gutter_y(1), (195, 80, 255)),
+              (FRAME_W // 2, _gutter_y(2), (0, 245, 255)),
+              (45, PHOTO_BOTTOMS[3] + 30, (255, 50, 180)),
+          ]],
+        *[{'shape': 'circle', 'x': x, 'y': y, 'size': 20, 'color': color}
+          for x, y, color in [
+              (FRAME_W - 45, PHOTO_TOPS[0] - 20, (255, 230, 60)),
+              (45, _gutter_y(0), (195, 80, 255)),
+              (FRAME_W - 45, _gutter_y(2), (255, 230, 60)),
+              (FRAME_W - 45, PHOTO_BOTTOMS[3] + 30, (0, 245, 255)),
+          ]],
+        {'shape': 'star', 'x': _photo_corner(0, 'tr')[0], 'y': _photo_corner(0, 'tr')[1], 'size': 32, 'color': (255, 50, 180), 'rotation': 0},
+        {'shape': 'star', 'x': _photo_corner(1, 'bl')[0], 'y': _photo_corner(1, 'bl')[1], 'size': 32, 'color': (0, 245, 255), 'rotation': 20},
+        {'shape': 'star', 'x': _photo_corner(2, 'tr')[0], 'y': _photo_corner(2, 'tr')[1], 'size': 32, 'color': (255, 230, 60), 'rotation': -15},
+        {'shape': 'star', 'x': _photo_corner(3, 'bl')[0], 'y': _photo_corner(3, 'bl')[1], 'size': 32, 'color': (195, 80, 255), 'rotation': 10},
+    ],
+    'golden_hour': [
+        *[{'shape': 'circle', 'x': x, 'y': y, 'size': size, 'color': color}
+          for x, y, size, color in [
+              (45, PHOTO_TOPS[0] - 20, 32, (255, 184, 70)),
+              (FRAME_W // 2, _gutter_y(0), 30, (255, 215, 120)),
+              (FRAME_W - 45, _gutter_y(1), 32, (242, 125, 70)),
+              (FRAME_W // 2, _gutter_y(2), 30, (255, 184, 70)),
+              (45, PHOTO_BOTTOMS[3] + 30, 32, (242, 125, 70)),
+          ]],
+        *[{'shape': 'sparkle4', 'x': x, 'y': y, 'size': 34, 'color': color}
+          for x, y, color in [
+              (FRAME_W - 45, PHOTO_TOPS[0] - 20, (255, 230, 170)),
+              (45, _gutter_y(1), (255, 215, 120)),
+              (FRAME_W - 45, _gutter_y(2), (255, 185, 100)),
+              (FRAME_W - 45, PHOTO_BOTTOMS[3] + 30, (255, 230, 170)),
+          ]],
+        {'shape': 'star', 'x': _photo_corner(0, 'br')[0], 'y': _photo_corner(0, 'br')[1], 'size': 34, 'color': (255, 215, 120), 'rotation': 10},
+        {'shape': 'star', 'x': _photo_corner(1, 'tl')[0], 'y': _photo_corner(1, 'tl')[1], 'size': 34, 'color': (242, 125, 70), 'rotation': -15},
+        {'shape': 'star', 'x': _photo_corner(2, 'br')[0], 'y': _photo_corner(2, 'br')[1], 'size': 34, 'color': (255, 184, 70), 'rotation': 20},
+        {'shape': 'star', 'x': _photo_corner(3, 'tl')[0], 'y': _photo_corner(3, 'tl')[1], 'size': 34, 'color': (255, 215, 120), 'rotation': 0},
+    ],
+})
+
+
+def _draw_scattered_accents(draw, pack_name, stickers):
+    """Scatter small, deterministic accents across side rails and photo corners."""
+    rng = random.Random(f'photobooth-stickers:{pack_name}')
+    palette = [s['color'] for s in stickers if s.get('color')]
+    if not palette:
+        return
+
+    # Use the pack's own visual language when possible, while ensuring every
+    # pack receives attractive, readable accent shapes.
+    supported = {'circle', 'star', 'heart', 'diamond', 'sparkle4', 'paw', 'bow', 'ribbon'}
+    shapes = list(dict.fromkeys(s['shape'] for s in stickers if s.get('shape') in supported))
+    if not shapes:
+        shapes = ['star', 'sparkle4', 'heart']
+
+    def accent(x, y, size):
+        shape = rng.choice(shapes)
+        drawer = SHAPE_DRAWERS[shape]
+        kwargs = {'rotation': rng.randrange(0, 360)} if shape == 'star' else {}
+        drawer(draw, x, y, size, rng.choice(palette), **kwargs)
+
+    for slot, top in enumerate(PHOTO_TOPS):
+        bottom = PHOTO_BOTTOMS[slot]
+
+        # Two alternating side-rail accents per photo. These use the white
+        # border/margin rather than the narrow gutters between images.
+        left_x = rng.choice((24, 52))
+        right_x = FRAME_W - rng.choice((24, 52))
+        accent(left_x, rng.randint(top + 70, bottom - 70), rng.randint(16, 25))
+        accent(right_x, rng.randint(top + 70, bottom - 70), rng.randint(16, 25))
+
+        # One subtle in-photo corner accent. Keeping it near an edge preserves
+        # the subject while making the design feel distributed, not striped.
+        inset_x = LEFT_MARGIN + rng.choice((70, PHOTO_W - 70))
+        inset_y = top + rng.choice((70, PHOTO_H - 70))
+        accent(inset_x, inset_y, rng.randint(16, 23))
+
 
 def draw_sticker_pack(collage_img, pack_name):
-    """Draw all stickers from a named pack onto the given PIL Image (in-place)."""
+    """Draw a named pack plus balanced side and in-photo accents in-place."""
     stickers = STICKER_PACKS.get(pack_name, [])
     if not stickers:
         return
@@ -537,3 +684,4 @@ def draw_sticker_pack(collage_img, pack_name):
         if 'rotation' in s:
             kwargs['rotation'] = s['rotation']
         drawer(draw, s['x'], s['y'], s['size'], s['color'], **kwargs)
+    _draw_scattered_accents(draw, pack_name, stickers)

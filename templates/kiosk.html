@@ -214,26 +214,19 @@
             <div class="control-group">
               <label class="control-label">🎀 Sticker Packs</label>
               <div class="sticker-packs-grid" id="sticker-packs-grid">
-                <button class="pack-btn active" data-pack="none">No Stickers</button>
-                <button class="pack-btn" data-pack="girlypop">💕 Girlypop</button>
-                <button class="pack-btn" data-pack="cute_stars">⭐ Cute Stars</button>
-                <button class="pack-btn" data-pack="kawaii_paws">🐾 Kawaii Paws</button>
-                <button class="pack-btn" data-pack="party_confetti">🎉 Party Confetti</button>
-                <button class="pack-btn" data-pack="dreamy_sparkle">✨ Dreamy Sparkle</button>
-                <button class="pack-btn" data-pack="y2k_vibes">💖 Y2K Vibes</button>
-                <button class="pack-btn" data-pack="party_banners">🎏 Party Banners</button>
-                <button class="pack-btn" data-pack="party_lights">💡 Party Lights</button>
-                <button class="pack-btn" data-pack="love_theme">❤️ Love Theme</button>
+                {% for pack_id, pack_name in sticker_packs %}
+                <button class="pack-btn{% if pack_id == 'none' %} active{% endif %}" data-pack="{{ pack_id }}">{{ pack_name }}</button>
+                {% endfor %}
               </div>
             </div>
           </div>
 
           <div class="review-actions-compact">
             <button id="btn-save-customization" class="big-btn btn-go" tabindex="0">
-              Save Custom Photostrip ✨
+              Save Custom Photostrip ✨ <kbd class="key-badge">Enter ↵</kbd>
             </button>
             <button id="btn-take-more" class="small-btn btn-secondary" tabindex="0">
-              Take More Photos <kbd class="key-badge">Enter ↵</kbd>
+              Take More Photos <kbd class="key-badge">Esc</kbd>
             </button>
             <button
               id="btn-goto-gallery"
@@ -241,13 +234,6 @@
               tabindex="0"
             >
               See All Photos <kbd class="key-badge">G</kbd>
-            </button>
-            <button
-              id="btn-review-home"
-              class="small-btn btn-back"
-              tabindex="0"
-            >
-              Back to Menu <kbd class="key-badge key-badge-sm">Esc</kbd>
             </button>
           </div>
         </div>
