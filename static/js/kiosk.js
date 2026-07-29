@@ -818,33 +818,27 @@ document.addEventListener('DOMContentLoaded', () => {
     
     sortedSessions.forEach((sess) => {
       if (sess.collage_url) {
-        addGalleryCard(sess.collage_url);
+        addGalleryCard(sess.collage_url, sess, false);
       }
       
       const editedUrls = sess.collage_edited_urls || [];
       editedUrls.forEach((editUrl) => {
-        addGalleryCard(editUrl);
+        addGalleryCard(editUrl, sess, true);
       });
     });
   }
   
-  function addGalleryCard(imgUrl) {
+  function addGalleryCard(imgUrl, session, isEdited) {
       const card = document.createElement('div');
       card.className = 'gallery-card';
       card.tabIndex = 0;
       card.setAttribute('role', 'button');
       card.setAttribute('aria-label', 'Open photostrip preview');
 
-      const stripFrame = document.createElement('div');
-      stripFrame.className = 'photostrip-frame';
-
-      const strip = document.createElement('div');
-      strip.className = 'photostrip';
-
       const img = document.createElement('img');
       img.src = imgUrl + '?t=' + Date.now();
       img.alt = 'Collage';
-      img.className = 'photostrip-collage';
+      img.className = 'gallery-collage-preview';
       const openPreview = () => openLightbox(img.src);
       card.addEventListener('click', openPreview);
       card.addEventListener('keydown', (event) => {
@@ -853,10 +847,12 @@ document.addEventListener('DOMContentLoaded', () => {
           openPreview();
         }
       });
-      strip.appendChild(img);
 
-      stripFrame.appendChild(strip);
-      card.appendChild(stripFrame);
+      const time = document.createElement('div');
+      time.className = 'gallery-item-time';
+      time.textContent = `${session.time || ''}${isEdited ? ' · Edited' : ''}`;
+
+      card.append(img, time);
 
       gallerySessionsContainer.appendChild(card);
   }

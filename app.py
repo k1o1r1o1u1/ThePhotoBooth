@@ -2,16 +2,24 @@ import os
 import re
 import time
 import base64
+import sys
 from datetime import timedelta
-from flask import Flask, request, jsonify, render_template, session
+from flask import Flask, request, jsonify, render_template, session, send_from_directory
 from PIL import Image, ImageOps, ImageFilter
 from io import BytesIO
 from sticker_packs import draw_sticker_pack, STICKER_PACK_OPTIONS
 
-app = Flask(__name__)
+RESOURCE_DIR = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+APP_DATA_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else RESOURCE_DIR
+BUNDLED_STATIC_DIR = os.path.join(RESOURCE_DIR, 'static')
+PHOTOS_DIR = os.path.join(APP_DATA_DIR, 'static', 'photos')
+
+# PyInstaller extracts bundled files to a temporary folder for every run.
+# Serve bundled web assets explicitly so uploaded photos can persist beside EXE.
+app = Flask(__name__, static_folder=None)
 # Secure secret key for session management – persists across restarts
 # so that existing client session cookies remain valid.
-_secret_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.flask_secret')
+_secret_path = os.path.join(APP_DATA_DIR, '.flask_secret')
 if os.path.exists(_secret_path):
     with open(_secret_path, 'rb') as _f:
         app.secret_key = _f.read()
@@ -23,8 +31,19 @@ else:
 app.permanent_session_lifetime = timedelta(minutes=2)
 
 # Ensure static/photos directory exists
-PHOTOS_DIR = os.path.join(app.static_folder, 'photos') if app.static_folder else os.path.join('static', 'photos')
 os.makedirs(PHOTOS_DIR, exist_ok=True)
+
+
+@app.route('/static/photos/<path:filename>')
+def serve_photo(filename):
+    """Serve persistent photos saved beside this executable."""
+    return send_from_directory(PHOTOS_DIR, filename)
+
+
+@app.route('/static/<path:filename>')
+def serve_static_asset(filename):
+    """Serve CSS, JavaScript, and other bundled assets."""
+    return send_from_directory(BUNDLED_STATIC_DIR, filename)
 
 def sanitize_filename(name: str) -> str:
     """Return a filesystem‑safe version of a user supplied name."""
