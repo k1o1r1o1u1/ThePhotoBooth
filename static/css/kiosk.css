@@ -4,21 +4,21 @@
    DESIGN TOKENS — palette from logo (cream, green, coral, gold)
    ========================================================================= */
 :root {
-  --bg-primary: #faf7f2;
+  --bg-primary: #fffafd;
   --surface: #ffffff;
-  --surface-muted: #f5f0e8;
+  --surface-muted: #fdf1f6;
 
-  --border: rgba(61, 107, 79, 0.14);
-  --border-strong: rgba(61, 107, 79, 0.28);
+  --border: rgba(110, 22, 60, 0.12);
+  --border-strong: rgba(110, 22, 60, 0.24);
 
-  --text-primary: #2c2825;
-  --text-secondary: #6b635a;
-  --text-muted: #9a928a;
+  --text-primary: #29111f;
+  --text-secondary: #765467;
+  --text-muted: #a67b91;
 
-  --accent-green: #3d6b4f;
-  --accent-coral: #c96b4a;
-  --accent-gold: #c9a84c;
-  --accent-blush: #f0ddd8;
+  --accent-green: #8f1d4e;
+  --accent-coral: #c72c69;
+  --accent-gold: #e59abb;
+  --accent-blush: #f8dce9;
 
   --font-display: 'Inter', sans-serif;
   --font-sans: 'Inter', sans-serif;
@@ -28,8 +28,8 @@
   --radius-lg: 16px;
   --radius-full: 9999px;
 
-  --shadow-soft: 0 2px 8px rgba(44, 40, 37, 0.06);
-  --shadow-card: 0 4px 20px rgba(44, 40, 37, 0.08);
+  --shadow-soft: 0 2px 10px rgba(41, 17, 31, 0.07);
+  --shadow-card: 0 10px 30px rgba(41, 17, 31, 0.11);
 }
 
 /* =========================================================================
@@ -86,8 +86,8 @@ body {
 
 .session-timer.timer-warning {
   background: #fff8ed;
-  border-color: var(--accent-gold);
-  color: #a67c2e;
+  border-color: #e7a15d;
+  color: #9a4d0c;
 }
 
 .session-timer.timer-critical {
@@ -439,7 +439,7 @@ body.on-dashboard .corner-logo {
 }
 
 .btn-go:hover {
-  background: #b85d3f;
+  background: #8f1d4e;
   transform: translateY(-1px);
   box-shadow: var(--shadow-card);
 }
@@ -941,7 +941,7 @@ button.btn-go:focus .key-badge {
 }
 
 .capture-trigger:hover::before {
-  background: #b85d3f;
+  background: #8f1d4e;
 }
 
 .capture-trigger:active {
@@ -981,7 +981,7 @@ button.btn-go:focus .key-badge {
   grid-template-columns: minmax(260px, 340px) minmax(420px, 520px);
   align-items: center;
   justify-content: center;
-  gap: clamp(2rem, 5vw, 4.5rem);
+  gap: clamp(1.5rem, 4vw, 3rem);
   width: 100%;
   height: 100%;
   max-height: 100vh;
@@ -992,7 +992,7 @@ button.btn-go:focus .key-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: min(90vh, calc(100vh - 1.5rem));
+  height: min(88vh, calc(100vh - 2rem));
   min-width: 0;
 }
 
@@ -1024,7 +1024,7 @@ button.btn-go:focus .key-badge {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: clamp(0.45rem, 1vh, 0.7rem);
+  gap: 0.35rem;
   width: 100%;
   max-width: 520px;
   text-align: left;
@@ -1038,22 +1038,35 @@ button.btn-go:focus .key-badge {
 }
 
 .review-logo-img {
-  height: clamp(210px, 26vh, 290px);
+  height: clamp(144px, 18vh, 216px);
   margin-bottom: 0;
 }
 
 .review-right .welcome-title {
   margin: 0;
   line-height: 1.1;
+  font-size: clamp(1.35rem, 2.1vw, 1.9rem) !important;
 }
 
 .review-actions-compact {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.5rem;
+  gap: 0.35rem;
   width: 100%;
-  margin-top: 0.35rem;
+  margin-top: 0;
+}
+
+.review-actions-compact .big-btn {
+  min-height: 2.9rem;
+  padding: 0.65rem 1rem;
+  font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+}
+
+.review-actions-compact .small-btn {
+  min-height: 2.45rem;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.9rem;
 }
 
 .review-badge {
@@ -1581,10 +1594,10 @@ button.btn-go:focus .key-badge {
 .studio-controls {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin: 1rem 0 1.5rem 0;
+  gap: 0.6rem;
+  margin: 0.5rem 0 0.7rem;
   background: var(--surface-muted);
-  padding: 1rem;
+  padding: 0.75rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
@@ -1592,7 +1605,7 @@ button.btn-go:focus .key-badge {
 .control-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.3rem;
   text-align: left;
 }
 
@@ -1602,16 +1615,48 @@ button.btn-go:focus .key-badge {
   color: var(--text-primary);
 }
 
+.review-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.review-filter-btn {
+  min-height: 1.95rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.review-filter-btn:hover {
+  border-color: var(--accent-coral);
+  color: var(--accent-green);
+  transform: translateY(-1px);
+}
+
+.review-filter-btn.active {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  color: #ffffff;
+}
+
 .color-palette {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
   align-items: center;
 }
 
 .color-dot {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: 2px solid #ffffff;
   box-shadow: 0 0 0 1px var(--border-strong);
@@ -1662,15 +1707,15 @@ button.btn-go:focus .key-badge {
 .sticker-packs-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.3rem;
 }
 
 .pack-btn {
   background: var(--surface);
   border: 1.5px solid var(--border-strong);
   border-radius: var(--radius-full);
-  padding: 0.35rem 0.85rem;
-  font-size: 0.78rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-primary);
   cursor: pointer;

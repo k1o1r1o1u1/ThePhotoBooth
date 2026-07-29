@@ -1,25 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-primary: #faf7f2;
-  --bg-secondary: #f5f0e8;
+  --bg-primary: #fffafd;
+  --bg-secondary: #fdf1f6;
   --surface: #ffffff;
-  --border: rgba(61, 107, 79, 0.14);
-  --border-strong: rgba(61, 107, 79, 0.28);
-  --text-primary: #2c2825;
-  --text-secondary: #6b635a;
+  --border: rgba(110, 22, 60, 0.12);
+  --border-strong: rgba(110, 22, 60, 0.24);
+  --text-primary: #29111f;
+  --text-secondary: #765467;
 
-  --accent-green: #3d6b4f;
-  --accent-coral: #c96b4a;
-  --accent-gold: #c9a84c;
-  --accent-blush: #f0ddd8;
+  --accent-green: #8f1d4e;
+  --accent-coral: #c72c69;
+  --accent-gold: #e59abb;
+  --accent-blush: #f8dce9;
 
   --font-display: 'Inter', sans-serif;
   --font-sans: 'Inter', sans-serif;
 
   --border-radius: 12px;
-  --shadow-soft: 0 2px 8px rgba(44, 40, 37, 0.06);
-  --shadow-card: 0 4px 20px rgba(44, 40, 37, 0.08);
+  --shadow-soft: 0 2px 10px rgba(41, 17, 31, 0.07);
+  --shadow-card: 0 10px 30px rgba(41, 17, 31, 0.11);
 }
 
 * {
@@ -283,7 +283,7 @@ h1 {
 }
 
 .btn-primary:hover {
-  background: #b85d3f;
+  background: #8f1d4e;
   transform: translateY(-1px);
   box-shadow: var(--shadow-card);
 }
@@ -376,7 +376,7 @@ h1 {
 }
 
 .capture-trigger:hover::before {
-  background: #b85d3f;
+  background: #8f1d4e;
 }
 
 .capture-trigger:active {

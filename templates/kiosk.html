@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Photobooth</title>
     <link rel="icon" type="image/png" href="/static/logo.png" />
-    <link rel="stylesheet" href="/static/css/kiosk.css" />
+    <link rel="stylesheet" href="/static/css/kiosk.css?v=5" />
   </head>
   <body>
     <!-- Session Timer (top-right, hidden by default) -->
@@ -178,6 +178,19 @@
 
           <!-- Studio Customization Controls -->
           <div class="studio-controls">
+            <!-- Photo Filters -->
+            <div class="control-group">
+              <label class="control-label">Photo Filter</label>
+              <div class="review-filter-grid" id="review-filter-grid">
+                <button class="review-filter-btn active" data-filter="normal">Normal</button>
+                <button class="review-filter-btn" data-filter="grayscale">Grayscale</button>
+                <button class="review-filter-btn" data-filter="sepia">Vintage Sepia</button>
+                <button class="review-filter-btn" data-filter="cyan">Cool Cyan</button>
+                <button class="review-filter-btn" data-filter="neon">Neon Pink</button>
+                <button class="review-filter-btn" data-filter="contrast">High Contrast</button>
+              </div>
+            </div>
+
             <!-- Frame Background Colors -->
             <div class="control-group">
               <label class="control-label">🎨 Frame Background</label>
@@ -303,6 +316,6 @@
       </div>
     </div>
 
-    <script src="/static/js/kiosk.js?v=7"></script>
+    <script src="/static/js/kiosk.js?v=8"></script>
   </body>
 </html>

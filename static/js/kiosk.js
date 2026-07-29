@@ -582,9 +582,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   let activeFilter = 'normal';
   let selectedFrameColor = '#ffffff';
+  let selectedImageFilter = 'normal';
 
   const filterChips = document.querySelectorAll('#filter-chips .filter-chip');
   const colorDots = document.querySelectorAll('#frame-color-palette .color-dot');
+  const reviewFilterBtns = document.querySelectorAll('#review-filter-grid .review-filter-btn');
   const btnSaveCustomization = document.getElementById('btn-save-customization');
 
   // Filter chips click events
@@ -600,6 +602,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const customColorPicker = document.getElementById('custom-color-picker');
+
+  function setReviewImageFilter(filterName) {
+    selectedImageFilter = filterName;
+    reviewFilterBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filterName);
+    });
+  }
+
+  reviewFilterBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      setReviewImageFilter(btn.dataset.filter);
+      await updateFramePreviewFull();
+    });
+  });
 
   // Color dots click events (Review Screen)
   colorDots.forEach(dot => {
@@ -644,7 +660,8 @@ document.addEventListener('DOMContentLoaded', () => {
           images: capturedImages,
           session_timestamp: currentGallerySessionTimestamp,
           frame_color: selectedFrameColor,
-          sticker_pack: selectedStickerPack
+          sticker_pack: selectedStickerPack,
+          image_filter: selectedImageFilter
         })
       });
       const result = await response.json();
@@ -677,7 +694,8 @@ document.addEventListener('DOMContentLoaded', () => {
             images: capturedImages,
             session_timestamp: currentGallerySessionTimestamp,
             frame_color: selectedFrameColor,
-            sticker_pack: selectedStickerPack
+            sticker_pack: selectedStickerPack,
+            image_filter: selectedImageFilter
           })
         });
         const result = await response.json();
@@ -715,7 +733,8 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({
           session_dir: currentSessionDir,
           images: capturedImages,
-          frame_color: selectedFrameColor
+          frame_color: selectedFrameColor,
+          image_filter: selectedImageFilter
         })
       });
 
@@ -725,6 +744,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Populate Review Screen — reset customizations to defaults
       selectedFrameColor = '#ffffff';
       selectedStickerPack = 'none';
+      setReviewImageFilter('normal');
       colorDots.forEach(d => {
         d.classList.toggle('active', d.dataset.color === '#ffffff');
       });
@@ -1119,6 +1139,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Reset UI
           selectedFrameColor = '#ffffff';
           selectedStickerPack = 'none';
+          setReviewImageFilter('normal');
           colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
           packBtns.forEach(b => b.classList.toggle('active', b.dataset.pack === 'none'));
           

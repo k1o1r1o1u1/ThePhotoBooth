@@ -5,7 +5,7 @@ import base64
 import sys
 from datetime import timedelta
 from flask import Flask, request, jsonify, render_template, session, send_from_directory
-from PIL import Image, ImageOps, ImageFilter
+from PIL import Image, ImageOps, ImageFilter, ImageEnhance
 from io import BytesIO
 from sticker_packs import draw_sticker_pack, STICKER_PACK_OPTIONS
 
@@ -50,6 +50,31 @@ def sanitize_filename(name: str) -> str:
     cleaned = re.sub(r'[^a-zA-Z0-9\s_-]', '', name).strip()
     return cleaned.replace(' ', '_')
 
+
+def apply_photo_filter(image: Image.Image, filter_name: str) -> Image.Image:
+    """Apply the same named filter choices available in the admin editor."""
+    image = image.convert('RGB')
+    filter_name = filter_name if filter_name in {
+        'normal', 'grayscale', 'sepia', 'cyan', 'neon', 'contrast'
+    } else 'normal'
+
+    if filter_name == 'grayscale':
+        return ImageOps.grayscale(image).convert('RGB')
+    if filter_name == 'sepia':
+        filtered = ImageOps.colorize(ImageOps.grayscale(image), '#372217', '#f1d4a0')
+        filtered = ImageEnhance.Contrast(filtered).enhance(0.9)
+        return ImageEnhance.Brightness(filtered).enhance(0.95)
+    if filter_name in {'cyan', 'neon'}:
+        hue_shift = 128 if filter_name == 'cyan' else 206
+        hue, saturation, value = image.convert('HSV').split()
+        hue = hue.point(lambda pixel: (pixel + hue_shift) % 256)
+        filtered = Image.merge('HSV', (hue, saturation, value)).convert('RGB')
+        return ImageEnhance.Color(filtered).enhance(1.1 if filter_name == 'cyan' else 1.4)
+    if filter_name == 'contrast':
+        filtered = ImageEnhance.Contrast(image).enhance(1.4)
+        return ImageEnhance.Brightness(filtered).enhance(1.05)
+    return image
+
 @app.route('/')
 def kiosk():
     return render_template('kiosk.html', sticker_packs=STICKER_PACK_OPTIONS)
@@ -90,6 +115,7 @@ def upload_photos():
     # Prefer the session‑stored directory if not explicitly supplied
     session_dir = data.get('session_dir') or session.get('session_dir')
     image_data_list = data.get('images', [])
+    image_filter = data.get('image_filter', 'normal')
     if not session_dir or not image_data_list:
         return jsonify({'error': 'Missing session_dir or images'}), 400
     session_path = os.path.join(PHOTOS_DIR, session_dir)
@@ -144,7 +170,7 @@ def upload_photos():
             
             for img in pil_images:
                 # Crop/resize photo to exact dimensions
-                scaled_img = ImageOps.fit(img, (photo_w, photo_h), Image.Resampling.LANCZOS)
+                scaled_img = ImageOps.fit(apply_photo_filter(img, image_filter), (photo_w, photo_h), Image.Resampling.LANCZOS)
                 collage.paste(scaled_img, (left_margin, current_y))
                 current_y += photo_h + gutter
             
@@ -173,6 +199,7 @@ def render_preview():
     image_data_list = data.get('images', [])
     session_timestamp = data.get('session_timestamp')
     frame_color_hex = data.get('frame_color', '#ffffff')
+    image_filter = data.get('image_filter', 'normal')
     layer_type = data.get('layer_type', 'full')
     
     if not session_dir:
@@ -236,7 +263,7 @@ def render_preview():
         for img in pil_images:
             # Apply unsharp mask to match capture flow, only if loaded from disk, but let's do it for all to be consistent
             img = img.filter(ImageFilter.UnsharpMask(radius=1.5, percent=100, threshold=3))
-            scaled_img = ImageOps.fit(img, (photo_w, photo_h), Image.Resampling.LANCZOS)
+            scaled_img = ImageOps.fit(apply_photo_filter(img, image_filter), (photo_w, photo_h), Image.Resampling.LANCZOS)
             collage.paste(scaled_img, (left_margin, current_y))
             current_y += photo_h + gutter
 
@@ -265,6 +292,7 @@ def edit_existing():
     session_timestamp = data.get('session_timestamp')
     frame_color_hex = data.get('frame_color', '#ffffff')
     sticker_pack = data.get('sticker_pack', 'none')
+    image_filter = data.get('image_filter', 'normal')
     
     if not session_dir or not session_timestamp:
         return jsonify({'error': 'Missing session_dir or session_timestamp'}), 400
@@ -299,7 +327,7 @@ def edit_existing():
             if os.path.exists(old_filepath):
                 images_found = True
                 img = Image.open(old_filepath).convert('RGB')
-                scaled_img = ImageOps.fit(img, (photo_w, photo_h), Image.Resampling.LANCZOS)
+                scaled_img = ImageOps.fit(apply_photo_filter(img, image_filter), (photo_w, photo_h), Image.Resampling.LANCZOS)
                 collage.paste(scaled_img, (left_margin, current_y))
                 current_y += photo_h + gutter
                 
