@@ -412,8 +412,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const requestId = ++webcamStreamRequestId;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1920, max: 3840 },
-          height: { ideal: 1080, max: 2160 },
+          width: { ideal:3840 },
+          height: { ideal:2160 },
+          frameRate: {ideal: 30},
           facingMode: 'user'
         },
         audio: false
@@ -425,7 +426,10 @@ document.addEventListener('DOMContentLoaded', () => {
       webcamStream = stream;
       if (videoWebcam) {
         videoWebcam.srcObject = webcamStream;
-        // try to play — ignore promise rejection that occurs when autoplay is blocked
+        // Show the actual resolution Chrome is using
+        const track = webcamStream.getVideoTracks()[0];
+        console.log(track.getSettings());
+
         videoWebcam.play().catch(() => {});
       }
     } catch (err) {
@@ -999,6 +1003,9 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.width = videoWebcam.videoWidth || 640;
     canvas.height = videoWebcam.videoHeight || 480;
     const ctx = canvas.getContext('2d');
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
     // Apply active live filter to canvas context before drawing
     const filterMap = {
