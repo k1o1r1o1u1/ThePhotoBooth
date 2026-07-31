@@ -19,7 +19,10 @@
     <div id="view-customers" class="view-container active-view">
       <div class="admin-header-bar">
         <h2>Customer Folders</h2>
-        <input type="text" id="session-search" class="customer-search-input" placeholder="Search customer name...">
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <input type="text" id="session-search" class="customer-search-input" placeholder="Search customer name...">
+          <button id="btn-admin-settings" class="back-btn">Settings</button>
+        </div>
       </div>
       <div id="customer-grid" class="customer-grid">
         <!-- Populated by JS -->
@@ -208,10 +211,20 @@
     </div>
     <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
       <button id="btn-preview-close" class="btn btn-secondary">Cancel</button>
+      <button id="btn-preview-download" class="btn btn-secondary">Download JPG</button>
       <button id="btn-preview-edit" class="btn btn-primary">Open in Editor</button>
     </div>
   </div>
 
-  <script src="/static/js/admin.js"></script>
+  <div id="settings-modal" style="display: none; position: fixed; inset: 0; z-index: 1001; background: rgba(41,17,31,0.55); align-items: center; justify-content: center; padding: 1rem;">
+    <form id="settings-form" class="glass-panel" style="width: min(420px, 100%); padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center;"><h3>Venue Settings</h3><button type="button" id="btn-settings-close" class="back-btn">Close</button></div>
+      <label>Session duration (minutes)<input id="setting-session-duration" type="number" min="1" max="30" required style="width:100%; margin-top:0.35rem; padding:0.65rem;"></label>
+      <p id="settings-status" style="min-height:1.2rem; color:var(--text-secondary);"></p>
+      <button class="btn btn-primary" type="submit">Save Settings</button>
+    </form>
+  </div>
+
+  <script src="/static/js/admin.js?v=5"></script>
 </body>
 </html>

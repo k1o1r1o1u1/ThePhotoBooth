@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Photobooth</title>
     <link rel="icon" type="image/png" href="/static/logo.png" />
-    <link rel="stylesheet" href="/static/css/kiosk.css?v=5" />
+    <link rel="stylesheet" href="/static/css/kiosk.css?v=6" />
   </head>
   <body>
     <!-- Session Timer (top-right, hidden by default) -->
@@ -75,7 +75,7 @@
             the fun!
           </p>
           <p class="disclaimer-note">
-            ⏱ You have <strong>4 minutes</strong> for the photos. The timer will
+            ⏱ You have <strong id="session-duration-label">4 minutes</strong> for the photos. The timer will
             start after taking your first photo.
           </p>
         </div>
@@ -101,7 +101,7 @@
 
       <div class="capture-main-area">
         <div class="camera-container" id="camera-container-box">
-          <video id="webcam" autoplay playsinline class="filter-normal"></video>
+          <video id="webcam" autoplay playsinline></video>
           <div id="camera-overlay-effect" class="camera-overlay"></div>
           <div id="flash" class="flash-effect"></div>
           <div id="countdown" class="countdown-overlay hidden">
@@ -112,24 +112,6 @@
         <div class="capture-side-panel">
           <div class="capture-side-logo-wrap">
             <img src="/static/logo.png" alt="Logo" class="capture-side-logo" />
-          </div>
-
-          <!-- Live Filters Selector -->
-          <div class="live-filters-wrap">
-            <span class="live-filters-title">✨ Live Filters</span>
-            <div class="filter-chips-container" id="filter-chips">
-              <button class="filter-chip active" data-filter="normal">Original</button>
-              <button class="filter-chip" data-filter="clarendon">Clarendon</button>
-              <button class="filter-chip" data-filter="juno">Juno</button>
-              <button class="filter-chip" data-filter="lark">Lark</button>
-              <button class="filter-chip" data-filter="gingham">Gingham</button>
-              <button class="filter-chip" data-filter="moon">Moon</button>
-              <button class="filter-chip" data-filter="bw">B & W</button>
-              <button class="filter-chip" data-filter="valencia">Valencia</button>
-              <button class="filter-chip" data-filter="nashville">Nashville</button>
-              <button class="filter-chip" data-filter="lofi">Lo-Fi</button>
-              <button class="filter-chip" data-filter="aden">Aden</button>
-            </div>
           </div>
 
           <div class="thumbnails-container" id="thumbs-bar"></div>
@@ -178,19 +160,6 @@
 
           <!-- Studio Customization Controls -->
           <div class="studio-controls">
-            <!-- Photo Filters -->
-            <div class="control-group">
-              <label class="control-label">Photo Filter</label>
-              <div class="review-filter-grid" id="review-filter-grid">
-                <button class="review-filter-btn active" data-filter="normal">Normal</button>
-                <button class="review-filter-btn" data-filter="grayscale">Grayscale</button>
-                <button class="review-filter-btn" data-filter="sepia">Vintage Sepia</button>
-                <button class="review-filter-btn" data-filter="cyan">Cool Cyan</button>
-                <button class="review-filter-btn" data-filter="neon">Neon Pink</button>
-                <button class="review-filter-btn" data-filter="contrast">High Contrast</button>
-              </div>
-            </div>
-
             <!-- Frame Background Colors -->
             <div class="control-group">
               <label class="control-label">🎨 Frame Background</label>
@@ -223,15 +192,6 @@
               </div>
             </div>
 
-            <!-- Sticker Packs -->
-            <div class="control-group">
-              <label class="control-label">🎀 Sticker Packs</label>
-              <div class="sticker-packs-grid" id="sticker-packs-grid">
-                {% for pack_id, pack_name in sticker_packs %}
-                <button class="pack-btn{% if pack_id == 'none' %} active{% endif %}" data-pack="{{ pack_id }}">{{ pack_name }}</button>
-                {% endfor %}
-              </div>
-            </div>
           </div>
 
           <div class="review-actions-compact">
@@ -316,6 +276,6 @@
       </div>
     </div>
 
-    <script src="/static/js/kiosk.js?v=8"></script>
+    <script src="/static/js/kiosk.js?v=11"></script>
   </body>
 </html>

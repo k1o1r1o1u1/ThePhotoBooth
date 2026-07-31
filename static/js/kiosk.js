@@ -58,7 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let isCapturing = false;
   let burstAborted = false;
   const IDLE_TIMEOUT_MS = 120000; // 2 minutes
-  const SESSION_DURATION_MS = 240000; // 4 minutes
+  let sessionDurationMinutes = 4;
+  let SESSION_DURATION_MS = sessionDurationMinutes * 60 * 1000;
   const TIMER_END_STORAGE_KEY = 'photobooth_session_timer_end';
   const TIMER_CUSTOMER_STORAGE_KEY = 'photobooth_session_timer_customer';
   let sessionTimer = null;
@@ -143,6 +144,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const timerContainer = document.getElementById('session-timer');
   const timerDisplay = document.getElementById('timer-display');
   const sessionUser = document.getElementById('session-user');
+  const sessionDurationLabel = document.getElementById('session-duration-label');
+
+  async function loadSessionDuration() {
+    try {
+      const response = await fetch('/api/settings');
+      const data = await response.json();
+      const minutes = Number(data.session_duration_minutes);
+      if (!response.ok || !Number.isInteger(minutes) || minutes < 1) return;
+      sessionDurationMinutes = minutes;
+      SESSION_DURATION_MS = minutes * 60 * 1000;
+      if (sessionDurationLabel) {
+        sessionDurationLabel.textContent = `${minutes} minute${minutes === 1 ? '' : 's'}`;
+      }
+    } catch (err) {
+      console.warn('Using the default session duration:', err);
+    }
+  }
 
   function updateSessionUserBadge(screen) {
     if (!sessionUser) return;
@@ -183,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     capturedImages = [];
     countdownOverlay.classList.add('hidden');
-    alert('Time is up! Your 4-minute session has ended.');
+    alert(`Time is up! Your ${sessionDurationMinutes}-minute session has ended.`);
     performLogout();
   }
 
@@ -339,7 +357,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // Dashboard Navigation
   // =========================================================================
-  btnNewSession.addEventListener('click', () => startCaptureSession());
+  btnNewSession.addEventListener('click', async () => {
+    await loadSessionDuration();
+    startCaptureSession();
+  });
   btnGalleryBack.addEventListener('click', async () => {
     resetCaptureView();
     showScreen(screenCapture);
@@ -463,14 +484,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Reset UI customizations for new capture
       selectedFrameColor = '#ffffff';
-      selectedStickerPack = 'none';
       const colorDots = document.querySelectorAll('#frame-color-palette .color-dot');
-      const packBtns = document.querySelectorAll('#sticker-packs-grid .pack-btn');
       if (colorDots) {
           colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
-      }
-      if (packBtns) {
-          packBtns.forEach(b => b.classList.toggle('active', b.dataset.pack === 'none'));
       }
 
       // Ensure webcam is started and attached
@@ -580,42 +596,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // Live Filters & Studio Controls Implementation
   // =========================================================================
-  let activeFilter = 'normal';
   let selectedFrameColor = '#ffffff';
-  let selectedImageFilter = 'normal';
 
-  const filterChips = document.querySelectorAll('#filter-chips .filter-chip');
   const colorDots = document.querySelectorAll('#frame-color-palette .color-dot');
-  const reviewFilterBtns = document.querySelectorAll('#review-filter-grid .review-filter-btn');
   const btnSaveCustomization = document.getElementById('btn-save-customization');
 
-  // Filter chips click events
-  filterChips.forEach(chip => {
-    chip.addEventListener('click', () => {
-      filterChips.forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      activeFilter = chip.dataset.filter;
-      if (videoWebcam) {
-        videoWebcam.className = `filter-${activeFilter}`;
-      }
-    });
-  });
-
   const customColorPicker = document.getElementById('custom-color-picker');
-
-  function setReviewImageFilter(filterName) {
-    selectedImageFilter = filterName;
-    reviewFilterBtns.forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.filter === filterName);
-    });
-  }
-
-  reviewFilterBtns.forEach(btn => {
-    btn.addEventListener('click', async () => {
-      setReviewImageFilter(btn.dataset.filter);
-      await updateFramePreviewFull();
-    });
-  });
 
   // Color dots click events (Review Screen)
   colorDots.forEach(dot => {
@@ -634,22 +620,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Sticker Pack selection
-  let selectedStickerPack = 'none';
-  const packBtns = document.querySelectorAll('#sticker-packs-grid .pack-btn');
-
-  packBtns.forEach(btn => {
-    btn.addEventListener('click', async () => {
-      packBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedStickerPack = btn.dataset.pack;
-
-      // Re-render preview with sticker pack
-      await updateFramePreview(selectedFrameColor);
-    });
-  });
-
-  // Update the preview function to include sticker pack
   async function updateFramePreviewFull() {
     try {
       const response = await fetch('/api/session/render_preview', {
@@ -659,9 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
           session_dir: currentSessionDir,
           images: capturedImages,
           session_timestamp: currentGallerySessionTimestamp,
-          frame_color: selectedFrameColor,
-          sticker_pack: selectedStickerPack,
-          image_filter: selectedImageFilter
+          frame_color: selectedFrameColor
         })
       });
       const result = await response.json();
@@ -673,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Override updateFramePreview to also send sticker pack
+  // Refresh the photostrip preview after a frame color change.
   async function updateFramePreview(hexColor) {
     selectedFrameColor = hexColor;
     await updateFramePreviewFull();
@@ -693,9 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
             session_dir: currentSessionDir,
             images: capturedImages,
             session_timestamp: currentGallerySessionTimestamp,
-            frame_color: selectedFrameColor,
-            sticker_pack: selectedStickerPack,
-            image_filter: selectedImageFilter
+            frame_color: selectedFrameColor
           })
         });
         const result = await response.json();
@@ -733,8 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({
           session_dir: currentSessionDir,
           images: capturedImages,
-          frame_color: selectedFrameColor,
-          image_filter: selectedImageFilter
+          frame_color: selectedFrameColor
         })
       });
 
@@ -743,13 +708,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Populate Review Screen — reset customizations to defaults
       selectedFrameColor = '#ffffff';
-      selectedStickerPack = 'none';
-      setReviewImageFilter('normal');
       colorDots.forEach(d => {
         d.classList.toggle('active', d.dataset.color === '#ffffff');
-      });
-      packBtns.forEach(b => {
-        b.classList.toggle('active', b.dataset.pack === 'none');
       });
       imgCollagePreview.src = result.collage_url + '?t=' + Date.now();
       
@@ -945,7 +905,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- REVIEW SCREEN ----
     else if (currentScreen === screenReview) {
-      // Keep shortcuts screen-wide even after a frame or sticker control
+      // Keep shortcuts screen-wide even after a frame color control
       // retains keyboard focus.
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -1065,22 +1025,6 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.height = cropHeight;
     const ctx = canvas.getContext('2d');
 
-    // Apply active live filter to canvas context before drawing
-    const filterMap = {
-      'normal':    'none',
-      'clarendon': 'contrast(1.2) saturate(1.35) brightness(1.05)',
-      'juno':      'contrast(1.15) saturate(1.5) brightness(1.05) hue-rotate(-5deg)',
-      'lark':      'brightness(1.15) contrast(0.9) saturate(0.85)',
-      'gingham':   'brightness(1.05) sepia(0.04) contrast(0.95) saturate(0.85) hue-rotate(-10deg)',
-      'moon':      'grayscale(1) contrast(1.1) brightness(1.1)',
-      'bw':        'grayscale(1) contrast(1.2)',
-      'valencia':  'sepia(0.15) saturate(1.2) contrast(1.08) brightness(1.08) hue-rotate(-5deg)',
-      'nashville': 'sepia(0.2) contrast(1.15) brightness(1.1) saturate(1.25) hue-rotate(-15deg)',
-      'lofi':      'contrast(1.4) saturate(1.1) brightness(0.95)',
-      'aden':      'brightness(1.12) saturate(0.85) contrast(0.9) hue-rotate(20deg)'
-    };
-    ctx.filter = filterMap[activeFilter] || 'none';
-
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(
@@ -1094,6 +1038,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // Initialise
   // =========================================================================
+  loadSessionDuration();
   checkExistingLogin();
 
   // =========================================================================
@@ -1103,6 +1048,14 @@ document.addEventListener('DOMContentLoaded', () => {
     currentLightboxImgUrl = url;
     if (lightboxImg) lightboxImg.src = url;
     if (lightboxModal) lightboxModal.classList.remove('hidden');
+  }
+
+  function getDownloadUrl(photoUrl) {
+    const photoPath = new URL(photoUrl, window.location.origin).pathname;
+    const photoPrefix = '/static/photos/';
+    if (!photoPath.startsWith(photoPrefix)) return photoUrl;
+    const encodedPath = photoPath.slice(photoPrefix.length).split('/').map(encodeURIComponent).join('/');
+    return `/api/photo/download/${encodedPath}`;
   }
 
   function closeLightbox() {
@@ -1138,10 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
           
           // Reset UI
           selectedFrameColor = '#ffffff';
-          selectedStickerPack = 'none';
-          setReviewImageFilter('normal');
           colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
-          packBtns.forEach(b => b.classList.toggle('active', b.dataset.pack === 'none'));
           
           showScreen(screenReview);
           
@@ -1158,9 +1108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLightboxDownload.addEventListener('click', () => {
       if (!currentLightboxImgUrl) return;
       const a = document.createElement('a');
-      a.href = currentLightboxImgUrl;
-      const parts = currentLightboxImgUrl.split('/');
-      a.download = parts[parts.length - 1].split('?')[0];
+      a.href = getDownloadUrl(currentLightboxImgUrl);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

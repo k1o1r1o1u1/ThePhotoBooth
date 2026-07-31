@@ -3,6 +3,7 @@ import re
 import time
 import base64
 import sys
+import json
 from datetime import timedelta
 from flask import Flask, request, jsonify, render_template, session, send_from_directory
 from PIL import Image, ImageOps, ImageFilter, ImageEnhance
@@ -13,6 +14,44 @@ RESOURCE_DIR = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__
 APP_DATA_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else RESOURCE_DIR
 BUNDLED_STATIC_DIR = os.path.join(RESOURCE_DIR, 'static')
 PHOTOS_DIR = os.path.join(APP_DATA_DIR, 'static', 'photos')
+SETTINGS_PATH = os.path.join(APP_DATA_DIR, 'photobooth_settings.json')
+DEFAULT_SETTINGS = {
+    'session_duration_minutes': 4,
+}
+FRAME_WIDTH = 1182
+# A modest footer below the fourth photo keeps the strip balanced without
+# leaving an oversized blank area.
+FRAME_HEIGHT = 3700
+
+
+def load_settings():
+    settings = DEFAULT_SETTINGS.copy()
+    try:
+        if os.path.exists(SETTINGS_PATH):
+            with open(SETTINGS_PATH, 'r', encoding='utf-8') as settings_file:
+                saved_settings = json.load(settings_file)
+            if isinstance(saved_settings, dict):
+                settings.update(saved_settings)
+    except (OSError, json.JSONDecodeError):
+        pass
+
+    try:
+        settings['session_duration_minutes'] = max(1, min(30, int(settings['session_duration_minutes'])))
+    except (TypeError, ValueError):
+        settings['session_duration_minutes'] = DEFAULT_SETTINGS['session_duration_minutes']
+    return settings
+
+
+def save_settings(settings):
+    temporary_path = f'{SETTINGS_PATH}.tmp'
+    with open(temporary_path, 'w', encoding='utf-8') as settings_file:
+        json.dump(settings, settings_file, indent=2)
+    os.replace(temporary_path, SETTINGS_PATH)
+
+
+settings = load_settings()
+if not os.path.exists(SETTINGS_PATH):
+    save_settings(settings)
 
 # PyInstaller extracts bundled files to a temporary folder for every run.
 # Serve bundled web assets explicitly so uploaded photos can persist beside EXE.
@@ -27,8 +66,8 @@ else:
     app.secret_key = os.urandom(24)
     with open(_secret_path, 'wb') as _f:
         _f.write(app.secret_key)
-# Idle timeout (e.g., 2 minutes)
-app.permanent_session_lifetime = timedelta(minutes=2)
+# Keep the server session alive for the configured kiosk duration plus a buffer.
+app.permanent_session_lifetime = timedelta(minutes=settings['session_duration_minutes'] + 1)
 
 # Ensure static/photos directory exists
 os.makedirs(PHOTOS_DIR, exist_ok=True)
@@ -38,6 +77,17 @@ os.makedirs(PHOTOS_DIR, exist_ok=True)
 def serve_photo(filename):
     """Serve persistent photos saved beside this executable."""
     return send_from_directory(PHOTOS_DIR, filename)
+
+
+@app.route('/api/photo/download/<path:filename>')
+def download_photo(filename):
+    """Force a local browser download for a saved photo or collage."""
+    return send_from_directory(
+        PHOTOS_DIR,
+        filename,
+        as_attachment=True,
+        download_name=os.path.basename(filename),
+    )
 
 
 @app.route('/static/<path:filename>')
@@ -77,11 +127,36 @@ def apply_photo_filter(image: Image.Image, filter_name: str) -> Image.Image:
 
 @app.route('/')
 def kiosk():
-    return render_template('kiosk.html', sticker_packs=STICKER_PACK_OPTIONS)
+    return render_template('kiosk.html')
 
 @app.route('/admin')
 def admin():
     return render_template('admin.html', sticker_packs=STICKER_PACK_OPTIONS)
+
+
+@app.route('/api/settings')
+def get_settings():
+    """Return the kiosk-safe portion of the venue configuration."""
+    return jsonify({'session_duration_minutes': settings['session_duration_minutes']})
+
+
+@app.route('/api/admin/settings', methods=['POST'])
+def update_settings():
+    """Persist venue timer settings."""
+    data = request.json or {}
+
+    try:
+        duration = int(data.get('session_duration_minutes'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Enter a whole number of minutes'}), 400
+    if not 1 <= duration <= 30:
+        return jsonify({'error': 'Session duration must be between 1 and 30 minutes'}), 400
+
+    settings['session_duration_minutes'] = duration
+    settings.pop('admin_pin', None)
+    save_settings(settings)
+    app.permanent_session_lifetime = timedelta(minutes=duration + 1)
+    return jsonify({'status': 'success', 'session_duration_minutes': duration})
 
 # ---------------------------------------------------------------------------
 # Session handling – the kiosk start endpoint also acts as a login
@@ -146,8 +221,8 @@ def upload_photos():
     if pil_images:
         try:
             # Dimensions for 600 DPI (doubled from 300 DPI for higher resolution)
-            # 50mm x 150mm frame
-            frame_w, frame_h = 1182, 3544
+            # 50mm x 157mm frame with a subtle footer below the last photo.
+            frame_w, frame_h = FRAME_WIDTH, FRAME_HEIGHT
             # 43.3mm x 31.8mm photo
             photo_w, photo_h = 1022, 752
             # 300 DPI alternative:
@@ -209,7 +284,7 @@ def render_preview():
         return jsonify({'error': 'Missing images and session_timestamp'}), 400
 
     try:
-        frame_w, frame_h = 1182, 3544
+        frame_w, frame_h = FRAME_WIDTH, FRAME_HEIGHT
         photo_w, photo_h = 1022, 752
         # 300 DPI alternative:
         # frame_w, frame_h = 591, 1772
@@ -302,7 +377,7 @@ def edit_existing():
         return jsonify({'error': 'Session directory not found'}), 404
         
     try:
-        frame_w, frame_h = 1182, 3544
+        frame_w, frame_h = FRAME_WIDTH, FRAME_HEIGHT
         photo_w, photo_h = 1022, 752
         # 300 DPI alternative:
         # frame_w, frame_h = 591, 1772

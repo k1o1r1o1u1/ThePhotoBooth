@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const COLLAGE_WIDTH = 1182;
+  const COLLAGE_HEIGHT = 3700;
   // --- View Containers ---
   const viewCustomers = document.getElementById('view-customers');
   const viewGallery = document.getElementById('view-gallery');
@@ -7,6 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Customer View Elements ---
   const customerGrid = document.getElementById('customer-grid');
   const searchInput = document.getElementById('session-search');
+  const btnAdminSettings = document.getElementById('btn-admin-settings');
+  const settingsModal = document.getElementById('settings-modal');
+  const settingsForm = document.getElementById('settings-form');
+  const btnSettingsClose = document.getElementById('btn-settings-close');
+  const settingSessionDuration = document.getElementById('setting-session-duration');
+  const settingsStatus = document.getElementById('settings-status');
 
   // --- Gallery View Elements ---
   const galleryGrid = document.getElementById('gallery-grid');
@@ -66,8 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
   stickersImage.onload = drawCanvas;
   
   // Draggable Text State
-  let textX = 1182 / 2;
-  let textY = 3544 - 100;
+  let textX = COLLAGE_WIDTH / 2;
+  let textY = COLLAGE_HEIGHT - 100;
   let isDraggingText = false;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
@@ -249,12 +257,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const previewModal = document.getElementById('preview-modal');
   const previewModalImg = document.getElementById('preview-modal-img');
   const btnPreviewClose = document.getElementById('btn-preview-close');
+  const btnPreviewDownload = document.getElementById('btn-preview-download');
   const btnPreviewEdit = document.getElementById('btn-preview-edit');
   
   let currentPreviewSession = null;
   let currentPreviewCustomer = null;
   let currentPreviewImgUrl = null;
   let currentPreviewIsEdited = false;
+
+  function getDownloadUrl(photoUrl) {
+    const photoPath = new URL(photoUrl, window.location.origin).pathname;
+    const photoPrefix = '/static/photos/';
+    if (!photoPath.startsWith(photoPrefix)) return photoUrl;
+    const encodedPath = photoPath.slice(photoPrefix.length).split('/').map(encodeURIComponent).join('/');
+    return `/api/photo/download/${encodedPath}`;
+  }
 
   function openPreviewModal(imgUrl, session, customerData, isEdited) {
     currentPreviewSession = session;
@@ -274,6 +291,67 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         previewModal.style.display = 'none';
       }, 200);
+    });
+  }
+
+  function closeSettings() {
+    settingsModal.style.display = 'none';
+    settingsForm.reset();
+    settingsStatus.textContent = '';
+  }
+
+  if (btnAdminSettings) {
+    btnAdminSettings.addEventListener('click', async () => {
+      settingsStatus.textContent = '';
+      try {
+        const response = await fetch('/api/settings');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Unable to load settings');
+        settingSessionDuration.value = data.session_duration_minutes;
+        settingsModal.style.display = 'flex';
+        settingSessionDuration.focus();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  }
+
+  if (btnSettingsClose) btnSettingsClose.addEventListener('click', closeSettings);
+  if (settingsModal) {
+    settingsModal.addEventListener('click', event => {
+      if (event.target === settingsModal) closeSettings();
+    });
+  }
+  if (settingsForm) {
+    settingsForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      settingsStatus.textContent = 'Saving…';
+      try {
+        const response = await fetch('/api/admin/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_duration_minutes: settingSessionDuration.value,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Unable to save settings');
+        settingsStatus.textContent = `Saved: ${data.session_duration_minutes}-minute sessions.`;
+      } catch (err) {
+        settingsStatus.textContent = err.message;
+      }
+    });
+  }
+
+  if (btnPreviewDownload) {
+    btnPreviewDownload.addEventListener('click', () => {
+      if (!currentPreviewImgUrl) return;
+
+      const downloadLink = document.createElement('a');
+      downloadLink.href = getDownloadUrl(currentPreviewImgUrl);
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
     });
   }
 
@@ -329,8 +407,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnTextItalic) btnTextItalic.classList.remove('active');
     if (btnTextUnderline) btnTextUnderline.classList.remove('active');
     
-    textX = 1182 / 2;
-    textY = 3544 - 100;
+    textX = COLLAGE_WIDTH / 2;
+    textY = COLLAGE_HEIGHT - 100;
     
     // Reset Zoom and Pan
     zoomLevel = 1;
@@ -378,8 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
     originalImage = new Image();
     originalImage.crossOrigin = 'anonymous';
     originalImage.onload = () => {
-      canvas.width = 1182;
-      canvas.height = 3544;
+      canvas.width = COLLAGE_WIDTH;
+      canvas.height = COLLAGE_HEIGHT;
       drawCanvas();
     };
     originalImage.src = imgUrl + '?t=' + new Date().getTime();
@@ -773,6 +851,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Global Keyboard Shortcuts
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      if (settingsModal.style.display === 'flex') {
+        closeSettings();
+        return;
+      }
       // 1. If Preview Modal is open, close it
       if (previewModal.style.display === 'flex') {
         if (btnPreviewClose) btnPreviewClose.click();

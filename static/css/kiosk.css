@@ -754,7 +754,7 @@ button.btn-go:focus .key-badge {
 }
 
 .capture-side-logo {
-  height: clamp(144px, 20vh, 220px);
+  height: clamp(216px, 30vh, 330px);
   width: auto;
   object-fit: contain;
 }
@@ -1038,7 +1038,7 @@ button.btn-go:focus .key-badge {
 }
 
 .review-logo-img {
-  height: clamp(144px, 18vh, 216px);
+  height: clamp(216px, 30vh, 324px);
   margin-bottom: 0;
 }
 
@@ -1531,63 +1531,6 @@ button.btn-go:focus .key-badge {
   overflow: hidden;
 }
 
-/* ---- Instagram / Snapchat–style webcam filters ---- */
-#webcam.filter-normal    { filter: none; }
-#webcam.filter-clarendon { filter: contrast(1.2) saturate(1.35) brightness(1.05); }
-#webcam.filter-juno      { filter: contrast(1.15) saturate(1.5) brightness(1.05) hue-rotate(-5deg); }
-#webcam.filter-lark       { filter: brightness(1.15) contrast(0.9) saturate(0.85); }
-#webcam.filter-gingham   { filter: brightness(1.05) sepia(0.04) contrast(0.95) saturate(0.85) hue-rotate(-10deg); }
-#webcam.filter-moon      { filter: grayscale(1) contrast(1.1) brightness(1.1); }
-#webcam.filter-bw        { filter: grayscale(1) contrast(1.2); }
-#webcam.filter-valencia  { filter: sepia(0.15) saturate(1.2) contrast(1.08) brightness(1.08) hue-rotate(-5deg); }
-#webcam.filter-nashville { filter: sepia(0.2) contrast(1.15) brightness(1.1) saturate(1.25) hue-rotate(-15deg); }
-#webcam.filter-lofi      { filter: contrast(1.4) saturate(1.1) brightness(0.95); }
-#webcam.filter-aden      { filter: brightness(1.12) saturate(0.85) contrast(0.9) hue-rotate(20deg); }
-
-/* Filter selector bar */
-.live-filters-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  width: 100%;
-  text-align: left;
-}
-
-.live-filters-title {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--accent-green);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.filter-chips-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  width: 100%;
-}
-
-.filter-chip {
-  background: var(--surface-muted);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  padding: 0.25rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.filter-chip.active,
-.filter-chip:hover {
-  background: var(--accent-green);
-  color: #ffffff;
-  border-color: var(--accent-green);
-  transform: translateY(-1px);
-}
-
 /* =========================================================================
    STUDIO CUSTOMIZATION CONTROLS (REVIEW SCREEN)
    ========================================================================= */
@@ -1613,38 +1556,6 @@ button.btn-go:focus .key-badge {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-primary);
-}
-
-.review-filter-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.35rem;
-}
-
-.review-filter-btn {
-  min-height: 1.95rem;
-  padding: 0.3rem 0.4rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 0.7rem;
-  font-weight: 650;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
-}
-
-.review-filter-btn:hover {
-  border-color: var(--accent-coral);
-  color: var(--accent-green);
-  transform: translateY(-1px);
-}
-
-.review-filter-btn.active {
-  background: var(--accent-green);
-  border-color: var(--accent-green);
-  color: #ffffff;
 }
 
 .color-palette {
@@ -1701,37 +1612,4 @@ button.btn-go:focus .key-badge {
   background: var(--accent-blush);
   border-color: var(--accent-coral);
   color: var(--accent-coral);
-}
-
-/* Sticker Pack Selector */
-.sticker-packs-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.pack-btn {
-  background: var(--surface);
-  border: 1.5px solid var(--border-strong);
-  border-radius: var(--radius-full);
-  padding: 0.25rem 0.65rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.pack-btn:hover {
-  background: var(--accent-blush);
-  border-color: var(--accent-coral);
-  color: var(--accent-coral);
-  transform: translateY(-1px);
-}
-
-.pack-btn.active {
-  background: var(--accent-green);
-  color: #ffffff;
-  border-color: var(--accent-green);
 }
