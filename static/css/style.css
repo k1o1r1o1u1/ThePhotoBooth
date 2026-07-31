@@ -129,10 +129,10 @@ nav a:hover, nav a.active {
   bottom: 0.55rem;
   z-index: 60;
   color: var(--text-secondary);
-  font-size: 0.58rem;
+  font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.02em;
-  opacity: 0.32;
+  opacity: 0.42;
   pointer-events: none;
   user-select: none;
 }

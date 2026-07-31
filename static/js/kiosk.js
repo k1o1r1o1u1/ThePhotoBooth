@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const screenDashboard = document.getElementById('screen-dashboard');
   const screenCapture = document.getElementById('screen-capture');
   const screenReview = document.getElementById('screen-review');
+  const screenThankYou = document.getElementById('screen-thank-you');
   const screenGallery = document.getElementById('screen-gallery');
 
   const inputName = document.getElementById('customer-name');
@@ -27,7 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const imgCollagePreview = document.getElementById('collage-preview');
   const btnTakeMore = document.getElementById('btn-take-more');
   const btnGotoGallery = document.getElementById('btn-goto-gallery');
+  const btnEndSession = document.getElementById('btn-end-session');
   const btnCaptureExit = document.getElementById('btn-capture-exit');
+  const btnReturnWelcome = document.getElementById('btn-return-welcome');
+  const thankYouMessage = document.getElementById('thank-you-message');
 
   const gallerySessionsContainer = document.getElementById('gallery-sessions-container');
   const galleryEmpty = document.getElementById('gallery-empty');
@@ -64,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const TIMER_CUSTOMER_STORAGE_KEY = 'photobooth_session_timer_customer';
   let sessionTimer = null;
   let sessionTimerEnd = 0;
+  let thankYouTimer = null;
 
   // =========================================================================
   // Idle Timeout Management
@@ -72,8 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (idleTimer) clearTimeout(idleTimer);
     if (customerName) {
       idleTimer = setTimeout(() => {
-        alert('Session timed out due to inactivity.');
-        performLogout();
+        finishSession('Your session ended after a period of inactivity. Thank you for visiting Chini Champra Creations.');
       }, IDLE_TIMEOUT_MS);
     }
   }
@@ -106,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showScreen(screen) {
-    [screenLogin, screenDashboard, screenCapture, screenReview, screenGallery]
+    [screenLogin, screenDashboard, screenCapture, screenReview, screenThankYou, screenGallery]
       .forEach(s => { if (s) s.classList.add('hidden'); });
     screen.classList.remove('hidden');
     currentScreen = screen;
@@ -130,12 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => btnCapture.focus(), 100);
     } else if (screen === screenReview) {
       setTimeout(() => btnTakeMore.focus(), 100);
+    } else if (screen === screenThankYou) {
+      setTimeout(() => btnReturnWelcome.focus(), 100);
     } else if (screen === screenGallery) {
       setTimeout(() => btnGalleryBack.focus(), 100);
     }
 
     updateSessionUserBadge(screen);
     document.body.classList.toggle('on-dashboard', screen === screenDashboard);
+    if (btnEndSession) btnEndSession.classList.toggle('hidden', screen !== screenReview);
   }
 
   // =========================================================================
@@ -192,17 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handleSessionTimerExpired() {
-    burstAborted = true;
-    isCapturing = false;
-    stopSessionTimer();
-    if (webcamStream) {
-      webcamStream.getTracks().forEach(t => t.stop());
-      webcamStream = null;
-    }
-    capturedImages = [];
-    countdownOverlay.classList.add('hidden');
-    alert(`Time is up! Your ${sessionDurationMinutes}-minute session has ended.`);
-    performLogout();
+    finishSession(`Your ${sessionDurationMinutes}-minute photo session has ended. Thank you for visiting Chini Champra Creations.`);
   }
 
   function tickSessionTimer() {
@@ -340,7 +337,48 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // Logout
   // =========================================================================
+  function stopThankYouTimer() {
+    if (thankYouTimer) {
+      clearInterval(thankYouTimer);
+      thankYouTimer = null;
+    }
+  }
+
+  function returnToWelcome() {
+    stopThankYouTimer();
+    performLogout();
+  }
+
+  function startThankYouTimer() {
+    let secondsRemaining = 60;
+    stopThankYouTimer();
+    thankYouTimer = setInterval(() => {
+      secondsRemaining -= 1;
+      if (secondsRemaining <= 0) returnToWelcome();
+    }, 1000);
+  }
+
+  function finishSession(message) {
+    if (currentScreen === screenThankYou) return;
+    stopIdleWatcher();
+    stopSessionTimer();
+    burstAborted = true;
+    isCapturing = false;
+    capturedImages = [];
+    countdownOverlay.classList.add('hidden');
+    localStorage.removeItem('photobooth_customer');
+    customerName = '';
+    currentSessionDir = '';
+    webcamStreamRequestId++;
+    stopWebcam();
+    if (thankYouMessage) thankYouMessage.textContent = message;
+    showScreen(screenThankYou);
+    startThankYouTimer();
+    fetch('/api/customer/logout', { method: 'POST' }).catch(() => {});
+  }
+
   async function performLogout() {
+    stopThankYouTimer();
     stopIdleWatcher();
     stopSessionTimer();
     localStorage.removeItem('photobooth_customer');
@@ -353,6 +391,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   btnLogout.addEventListener('click', performLogout);
+  if (btnEndSession) {
+    btnEndSession.addEventListener('click', () => {
+      finishSession('Thank you for creating great memories with Chini Champra Creations. We hope to see you again soon!');
+    });
+  }
+  if (btnReturnWelcome) btnReturnWelcome.addEventListener('click', returnToWelcome);
 
   // =========================================================================
   // Dashboard Navigation
@@ -857,10 +901,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Hidden admin shortcut: Ctrl+F3 returns to dashboard from any screen
+    // Hidden admin shortcut: Ctrl+F3 opens the Admin page from any kiosk screen
     if (e.ctrlKey && e.key === 'F3') {
       e.preventDefault();
-      showScreen(screenDashboard);
+      window.location.assign('/admin');
       return;
     }
 
@@ -871,8 +915,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // ---- THANK YOU SCREEN ----
+    if (currentScreen === screenThankYou) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        returnToWelcome();
+      }
+    }
+
     // ---- LOGIN SCREEN ----
-    if (currentScreen === screenLogin) {
+    else if (currentScreen === screenLogin) {
       // Enter is handled on the input itself
     }
 

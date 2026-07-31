@@ -230,16 +230,39 @@ button:focus .key-badge {
   object-fit: contain;
 }
 
+.end-session-btn {
+  position: fixed;
+  top: 6.4rem;
+  right: 1.5rem;
+  z-index: 200;
+  padding: 0.75rem 1.35rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+
+.end-session-btn:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #ffffff;
+}
+
 .site-credit {
   position: fixed;
   left: 0.8rem;
   bottom: 0.55rem;
   z-index: 60;
   color: var(--text-muted);
-  font-size: 0.58rem;
+  font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.02em;
-  opacity: 0.32;
+  opacity: 0.42;
   pointer-events: none;
   user-select: none;
 }
@@ -287,6 +310,40 @@ button:focus .key-badge {
 
 #screen-login .name-input-wrap {
   margin-bottom: 1.25rem;
+}
+
+.thank-you-screen {
+  overflow: hidden;
+}
+
+.thank-you-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(560px, 100%);
+  gap: 1rem;
+  text-align: center;
+}
+
+.thank-you-logo {
+  width: min(420px, 60vw);
+  height: min(420px, 51vh);
+  object-fit: contain;
+  margin-bottom: 0.5rem;
+}
+
+.thank-you-content .welcome-title {
+  margin-top: clamp(-8rem, -12vh, -4rem);
+}
+
+.thank-you-message {
+  max-width: 470px;
+  color: var(--text-secondary);
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.55;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+  letter-spacing: 0.01em;
 }
 
 /* ---- Dashboard ---- */

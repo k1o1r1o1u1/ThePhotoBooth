@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Photobooth</title>
     <link rel="icon" type="image/png" href="/static/logo.png" />
-    <link rel="stylesheet" href="/static/css/kiosk.css?v=7" />
+    <link rel="stylesheet" href="/static/css/kiosk.css?v=11" />
   </head>
   <body>
     <!-- Session Timer (top-right, hidden by default) -->
     <div id="session-timer" class="session-timer hidden">
       <span id="timer-display">3:00</span>
     </div>
+    <button id="btn-end-session" class="end-session-btn hidden" type="button">
+      End Session
+    </button>
 
     <!-- User name (top-left on capture & review) -->
     <div id="session-user" class="session-user hidden"></div>
@@ -76,8 +79,9 @@
             the fun!
           </p>
           <p class="disclaimer-note">
-            ⏱ You have <strong id="session-duration-label">4 minutes</strong> for the photos. The timer will
-            start after taking your first photo.
+            ⏱ You have
+            <strong id="session-duration-label">4 minutes</strong> for the
+            photos. The timer will start after taking your first photo.
           </p>
         </div>
 
@@ -166,40 +170,124 @@
               <label class="control-label">🎨 Frame Background</label>
               <div class="color-palette" id="frame-color-palette">
                 <!-- Classic & Modern Neutral -->
-                <button class="color-dot active" data-color="#ffffff" style="background: #ffffff;" title="Classic White"></button>
-                <button class="color-dot" data-color="#fdfbf7" style="background: #fdfbf7;" title="Creamy Vanilla"></button>
-                <button class="color-dot" data-color="#1a1a1a" style="background: #1a1a1a;" title="Noir Black"></button>
-                
+                <button
+                  class="color-dot active"
+                  data-color="#ffffff"
+                  style="background: #ffffff"
+                  title="Classic White"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#fdfbf7"
+                  style="background: #fdfbf7"
+                  title="Creamy Vanilla"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#1a1a1a"
+                  style="background: #1a1a1a"
+                  title="Noir Black"
+                ></button>
+
                 <!-- Girly & Cute Pastels -->
-                <button class="color-dot" data-color="#ffd1dc" style="background: #ffd1dc;" title="Baby Pink"></button>
-                <button class="color-dot" data-color="#ffb6c1" style="background: #ffb6c1;" title="Soft Rose"></button>
-                <button class="color-dot" data-color="#ff69b4" style="background: #ff69b4;" title="Hot Pink"></button>
-                <button class="color-dot" data-color="#e2d4f0" style="background: #e2d4f0;" title="Pastel Lavender"></button>
-                <button class="color-dot" data-color="#d8b4fe" style="background: #d8b4fe;" title="Lilac Dreams"></button>
-                
+                <button
+                  class="color-dot"
+                  data-color="#ffd1dc"
+                  style="background: #ffd1dc"
+                  title="Baby Pink"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#ffb6c1"
+                  style="background: #ffb6c1"
+                  title="Soft Rose"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#ff69b4"
+                  style="background: #ff69b4"
+                  title="Hot Pink"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#e2d4f0"
+                  style="background: #e2d4f0"
+                  title="Pastel Lavender"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#d8b4fe"
+                  style="background: #d8b4fe"
+                  title="Lilac Dreams"
+                ></button>
+
                 <!-- Trendy Aesthetic Tones -->
-                <button class="color-dot" data-color="#b4f8c8" style="background: #b4f8c8;" title="Matcha Mint"></button>
-                <button class="color-dot" data-color="#fbe7c6" style="background: #fbe7c6;" title="Warm Butter"></button>
-                <button class="color-dot" data-color="#a0c4ff" style="background: #a0c4ff;" title="Baby Blue"></button>
-                <button class="color-dot" data-color="#3d6b4f" style="background: #3d6b4f;" title="Sage Green"></button>
-                <button class="color-dot" data-color="#c96b4a" style="background: #c96b4a;" title="Terracotta Coral"></button>
-                <button class="color-dot" data-color="#c9a84c" style="background: #c9a84c;" title="Vintage Gold"></button>
+                <button
+                  class="color-dot"
+                  data-color="#b4f8c8"
+                  style="background: #b4f8c8"
+                  title="Matcha Mint"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#fbe7c6"
+                  style="background: #fbe7c6"
+                  title="Warm Butter"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#a0c4ff"
+                  style="background: #a0c4ff"
+                  title="Baby Blue"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#3d6b4f"
+                  style="background: #3d6b4f"
+                  title="Sage Green"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#c96b4a"
+                  style="background: #c96b4a"
+                  title="Terracotta Coral"
+                ></button>
+                <button
+                  class="color-dot"
+                  data-color="#c9a84c"
+                  style="background: #c9a84c"
+                  title="Vintage Gold"
+                ></button>
 
                 <!-- Custom Color Picker -->
-                <label class="custom-color-picker-wrap" title="Custom Color Picker">
-                  <input type="color" id="custom-color-picker" value="#ffffff" />
+                <label
+                  class="custom-color-picker-wrap"
+                  title="Custom Color Picker"
+                >
+                  <input
+                    type="color"
+                    id="custom-color-picker"
+                    value="#ffffff"
+                  />
                   <span class="custom-color-btn">🎨 Custom</span>
                 </label>
               </div>
             </div>
-
           </div>
 
           <div class="review-actions-compact">
-            <button id="btn-save-customization" class="big-btn btn-go" tabindex="0">
+            <button
+              id="btn-save-customization"
+              class="big-btn btn-go"
+              tabindex="0"
+            >
               Save Custom Photostrip ✨ <kbd class="key-badge">Enter ↵</kbd>
             </button>
-            <button id="btn-take-more" class="small-btn btn-secondary" tabindex="0">
+            <button
+              id="btn-take-more"
+              class="small-btn btn-secondary"
+              tabindex="0"
+            >
               Take More Photos <kbd class="key-badge">Esc</kbd>
             </button>
             <button
@@ -211,6 +299,24 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- SESSION COMPLETE -->
+    <div id="screen-thank-you" class="screen hidden thank-you-screen">
+      <div class="thank-you-content">
+        <img
+          src="/static/logo.png"
+          alt="Chini Champra Creations"
+          class="thank-you-logo"
+        />
+        <h1 class="welcome-title">Thank You!</h1>
+        <p id="thank-you-message" class="thank-you-message">
+          Thank you for creating great memories with Chini Champra Creations.
+        </p>
+        <button id="btn-return-welcome" class="big-btn btn-go" type="button">
+          Return to Welcome <kbd class="key-badge">Enter ↵</kbd>
+        </button>
       </div>
     </div>
 
@@ -261,7 +367,11 @@
             id="btn-lightbox-download"
             class="small-btn"
             title="Download"
-            style="background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary);"
+            style="
+              background: var(--bg-secondary);
+              border: 1px solid var(--border);
+              color: var(--text-primary);
+            "
           >
             ⬇ Download
           </button>
@@ -277,6 +387,6 @@
       </div>
     </div>
 
-    <script src="/static/js/kiosk.js?v=11"></script>
+    <script src="/static/js/kiosk.js?v=14"></script>
   </body>
 </html>
