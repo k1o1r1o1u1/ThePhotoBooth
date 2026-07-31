@@ -230,6 +230,20 @@ button:focus .key-badge {
   object-fit: contain;
 }
 
+.site-credit {
+  position: fixed;
+  left: 0.8rem;
+  bottom: 0.55rem;
+  z-index: 60;
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  opacity: 0.32;
+  pointer-events: none;
+  user-select: none;
+}
+
 .welcome-title {
   font-family: var(--font-display);
   font-weight: 700;
