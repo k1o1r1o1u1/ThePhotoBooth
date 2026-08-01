@@ -631,9 +631,10 @@ def logout():
     return jsonify({'status': 'logged out'})
 
 if __name__ == '__main__':
-    import sys
     use_ssl = '--ssl' in sys.argv
     ssl_ctx = 'adhoc' if use_ssl else None
     if use_ssl:
         print("Starting Flask with adhoc SSL (HTTPS) enabled.")
-    app.run(host='0.0.0.0', port=5000, debug=True, ssl_context=ssl_ctx)
+    # The Flask debug reloader relaunches a PyInstaller EXE recursively and
+    # can prevent the packaged server from binding to its port.
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, ssl_context=ssl_ctx)
