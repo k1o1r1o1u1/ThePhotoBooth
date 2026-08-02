@@ -14,7 +14,7 @@ Each pack is a list of sticker definitions with:
 
 import math
 import random
-from PIL import ImageDraw
+from PIL import Image, ImageDraw
 
 # ── Collage geometry constants (must match app.py) ──────────────────────────
 FRAME_W, FRAME_H = 1182, 3544
@@ -198,7 +198,14 @@ def _draw_arrow_heart(draw, cx, cy, size, color, **kw):
         (tail_x + f * 0.4, tail_y + f * 0.2),
     ], fill=(220, 220, 180))
 
+def draw_png_overlay(collage_img):
+    overlay = Image.open("static/stickers/kawaii.png").convert("RGBA")
+    overlay = overlay.resize(collage_img.size)
 
+    collage_rgba = collage_img.convert("RGBA")
+    collage_rgba.alpha_composite(overlay)
+
+    collage_img.paste(collage_rgba.convert("RGB"))
 # Shape dispatcher
 SHAPE_DRAWERS = {
     'circle':       _draw_circle,
@@ -520,6 +527,7 @@ STICKER_PACKS = {
         {'shape': 'circle',   'x': FRAME_W // 3,   'y': _gutter_y(2) + 20, 'size': 14, 'color': (255, 200, 220)},
         {'shape': 'circle',   'x': FRAME_W * 2//3, 'y': _gutter_y(1) - 20, 'size': 12, 'color': (255, 200, 220)},
     ],
+    'png_test' : [],
 }
 
 # This catalogue is intentionally shared by the kiosk and admin templates.
@@ -540,6 +548,7 @@ STICKER_PACK_OPTIONS = [
     ('tropical_pop', '🌺 Tropical Pop'),
     ('neon_arcade', '🕹️ Neon Arcade'),
     ('golden_hour', '🌅 Golden Hour'),
+    ("png_test", "🖼 PNG Test")
 ]
 
 # Additional, high-contrast packs. The repeated gutter positions keep the
@@ -668,20 +677,32 @@ def _draw_scattered_accents(draw, pack_name, stickers):
         inset_y = top + rng.choice((70, PHOTO_H - 70))
         accent(inset_x, inset_y, rng.randint(16, 23))
 
-
 def draw_sticker_pack(collage_img, pack_name):
     """Draw a named pack plus balanced side and in-photo accents in-place."""
+
+    if pack_name == "png_test":
+        draw_png_overlay(collage_img)
+        return
+
     stickers = STICKER_PACKS.get(pack_name, [])
+
     if not stickers:
         return
+
     draw = ImageDraw.Draw(collage_img)
+
     for s in stickers:
         shape = s['shape']
         drawer = SHAPE_DRAWERS.get(shape)
+
         if not drawer:
             continue
+
         kwargs = {}
+
         if 'rotation' in s:
             kwargs['rotation'] = s['rotation']
+
         drawer(draw, s['x'], s['y'], s['size'], s['color'], **kwargs)
+
     _draw_scattered_accents(draw, pack_name, stickers)
