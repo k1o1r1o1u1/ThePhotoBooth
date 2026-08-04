@@ -353,6 +353,11 @@ button:focus .key-badge {
   transform: translateY(clamp(-8rem, -10vh, -6rem));
 }
 
+.thank-you-content .big-btn:hover,
+.thank-you-content .big-btn:active {
+  transform: translateY(clamp(-8rem, -10vh, -6rem));
+}
+
 /* ---- Dashboard ---- */
 #screen-dashboard.screen-dashboard {
   justify-content: flex-start;
