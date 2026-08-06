@@ -297,7 +297,7 @@ button:focus .key-badge {
 }
 
 #screen-login .welcome-logo-img {
-  height: clamp(12rem, 26vw, 19rem);
+  height: clamp(18rem, 39vw, 28.5rem);
 }
 
 #screen-login .welcome-title {
@@ -305,11 +305,11 @@ button:focus .key-badge {
 }
 
 #screen-login .welcome-sub {
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.5rem;
 }
 
 #screen-login .name-input-wrap {
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.6rem;
 }
 
 .thank-you-screen {
@@ -1447,7 +1447,7 @@ button.btn-go:focus .key-badge {
   }
 
   #screen-login .welcome-logo-img {
-    height: clamp(9rem, 22vw, 14rem);
+    height: clamp(13.5rem, 33vw, 21rem);
   }
 
   #screen-login .welcome-sub,
