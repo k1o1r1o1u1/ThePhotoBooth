@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photobooth Admin Panel</title>
   <link rel="icon" type="image/png" href="/static/logo.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=15">
+  <link rel="stylesheet" href="/static/css/style.css?v=16">
 </head>
 <body>
   <!-- Persistent corner logo watermark -->
@@ -47,13 +47,20 @@
         <input id="token-customer-name" required placeholder="Customer name">
         <input id="token-contact" placeholder="Contact no.">
         <input id="token-email" type="email" placeholder="Email (optional)">
-        <input id="token-people-count" type="number" min="1" step="1" value="1" required placeholder="No. of people">
+        <div style="position:relative; width:100%;">
+          <span style="position:absolute; top:-6px; left:8px; background:var(--bg-primary); padding:0 4px; font-size:0.65rem; color:var(--text-secondary); border-radius:3px;">People</span>
+          <input id="token-people-count" type="number" min="1" step="1" value="1" required style="width:100%;">
+        </div>
+        <div style="position:relative; width:100%;">
+          <span style="position:absolute; top:-6px; left:8px; background:var(--bg-primary); padding:0 4px; font-size:0.65rem; color:var(--text-secondary); border-radius:3px;">Strips</span>
+          <input id="token-no-of-strips" type="number" min="0" step="1" value="0" required style="width:100%;">
+        </div>
         <input id="token-amount" type="number" min="0" step="0.01" placeholder="Amount">
         <select id="token-payment-mode"><option value="">Payment mode</option><option>Cash</option><option>UPI</option><option>UPI + Cash</option><option>Card</option><option>Other</option></select>
         <button class="btn btn-primary" type="submit">Save Token</button>
       </form>
       <input id="token-search" class="customer-search-input" placeholder="Search token, name, contact, or email..." style="margin:1rem 0;max-width:420px;">
-      <div class="token-table-wrap"><table class="token-table"><thead><tr><th>Token</th><th>Name</th><th>Contact</th><th>Email</th><th>People</th><th>Amount</th><th>Payment</th><th>Booth used</th><th>Printing done</th><th>Print given</th><th>Action</th></tr></thead><tbody id="token-table-body"></tbody></table></div>
+      <div class="token-table-wrap"><table class="token-table"><thead><tr><th>Token</th><th>Name</th><th>Contact</th><th>Email</th><th>People</th><th>Strips</th><th>Amount</th><th>Payment</th><th>Booth used</th><th>Printing done</th><th>Print given</th><th>Action</th></tr></thead><tbody id="token-table-body"></tbody></table></div>
     </div>
 
     <!-- VIEW 2: Customer Gallery -->

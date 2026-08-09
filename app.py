@@ -114,6 +114,8 @@ def initialise_token_db():
             connection.execute("ALTER TABLE tokens ADD COLUMN email TEXT DEFAULT ''")
         if 'people_count' not in columns:
             connection.execute('ALTER TABLE tokens ADD COLUMN people_count INTEGER NOT NULL DEFAULT 1')
+        if 'no_of_strips' not in columns:
+            connection.execute('ALTER TABLE tokens ADD COLUMN no_of_strips INTEGER NOT NULL DEFAULT 0')
         if 'printing_done' not in columns:
             connection.execute('ALTER TABLE tokens ADD COLUMN printing_done INTEGER NOT NULL DEFAULT 0')
         if 'printing_done_at' not in columns:
@@ -231,6 +233,7 @@ def token_analytics(connection):
     return {
         'total_customers': len(tokens),
         'total_people': sum(max(1, int(token['people_count'] or 1)) for token in tokens),
+        'total_strips': sum(int(token['no_of_strips'] or 0) for token in tokens),
         'total_revenue': sum(float(token['amount'] or 0) for token in tokens),
         'pending_booth': sum(not token['booth_used'] for token in tokens),
         'booth_used': sum(bool(token['booth_used']) for token in tokens),
@@ -273,20 +276,25 @@ def save_token():
         people_count = max(1, int(data.get('people_count') or 1))
     except (TypeError, ValueError):
         return jsonify({'error': 'Number of people must be a whole number'}), 400
+    try:
+        no_of_strips = max(0, int(data.get('no_of_strips') or 0))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Number of strips must be a whole number'}), 400
     now = datetime.now().isoformat(timespec='seconds')
     with get_token_db() as connection:
         connection.execute('''
-            INSERT INTO tokens (token_number, customer_name, contact_number, email, people_count, amount, payment_mode, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO tokens (token_number, customer_name, contact_number, email, people_count, no_of_strips, amount, payment_mode, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(token_number) DO UPDATE SET
               customer_name = excluded.customer_name,
               contact_number = excluded.contact_number,
               email = excluded.email,
               people_count = excluded.people_count,
+              no_of_strips = excluded.no_of_strips,
               amount = excluded.amount,
               payment_mode = excluded.payment_mode
         ''', (token_number, customer_name, str(data.get('contact_number') or '').strip(),
-              str(data.get('email') or '').strip(), people_count, amount, str(data.get('payment_mode') or '').strip(), now))
+              str(data.get('email') or '').strip(), people_count, no_of_strips, amount, str(data.get('payment_mode') or '').strip(), now))
     return jsonify({'status': 'success'})
 
 

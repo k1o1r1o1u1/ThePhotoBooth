@@ -130,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cards = [
       ['Customers', analytics.total_customers],
       ['People', analytics.total_people],
+      ['Strips', analytics.total_strips],
       ['Revenue', `₹${Number(analytics.total_revenue || 0).toFixed(2)}`],
       ['Pending booth', analytics.pending_booth],
       ['Photos taken', analytics.booth_used],
@@ -149,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tokenTableBody.innerHTML = rows.map(token => `<tr>
       <td data-label="Token">${escapeHtml(token.token_number)}${token.is_test ? ' <small>(test)</small>' : ''}</td>
       <td data-label="Name">${escapeHtml(token.customer_name)}</td><td data-label="Contact">${escapeHtml(token.contact_number)}</td><td data-label="Email">${escapeHtml(token.email)}</td><td data-label="People">${Number(token.people_count || 1)}</td>
+      <td data-label="Strips">${Number(token.no_of_strips || 0)}</td>
       <td data-label="Amount">₹${Number(token.amount || 0).toFixed(2)}</td><td data-label="Payment">${escapeHtml(token.payment_mode)}</td>
       <td data-label="Booth used"><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="booth_used" ${token.booth_used ? 'checked' : ''}> ${token.booth_used ? 'Used' : 'Pending'}</label></td>
       <td data-label="Printing done"><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="printing_done" ${token.printing_done ? 'checked' : ''}> ${token.printing_done ? 'Done' : 'Pending'}</label></td>
@@ -198,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
       contact_number: document.getElementById('token-contact').value,
       email: document.getElementById('token-email').value,
       people_count: document.getElementById('token-people-count').value,
+      no_of_strips: document.getElementById('token-no-of-strips').value,
       amount: document.getElementById('token-amount').value,
       payment_mode: document.getElementById('token-payment-mode').value,
     };
@@ -240,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('token-contact').value = token.contact_number || '';
       document.getElementById('token-email').value = token.email || '';
       document.getElementById('token-people-count').value = token.people_count || 1;
+      document.getElementById('token-no-of-strips').value = token.no_of_strips || 0;
       document.getElementById('token-amount').value = token.amount || '';
       document.getElementById('token-payment-mode').value = token.payment_mode || '';
       tokenForm.querySelector('button[type="submit"]').textContent = 'Update Token';

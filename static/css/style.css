@@ -996,11 +996,11 @@ h1 {
 
 
 /* Token register and operational dashboard */
-.token-dashboard { display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:1rem; margin:1.25rem 0; }
+.token-dashboard { display:grid; grid-template-columns:repeat(9,minmax(0,1fr)); gap:1rem; margin:1.25rem 0; }
 .token-stat { background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:1rem; display:flex; flex-direction:column; gap:.35rem; }
 .token-stat span { color:var(--text-secondary); font-size:.82rem; }
 .token-stat strong { color:var(--accent-green); font-size:1.45rem; }
-.token-form { display:grid; grid-template-columns:1fr 1.5fr 1.3fr 1.5fr .7fr .8fr 1fr auto; gap:.65rem; align-items:center; padding:1rem; border:1px solid var(--border); border-radius:12px; background:var(--bg-secondary); }
+.token-form { display:grid; grid-template-columns:1fr 1.5fr 1.3fr 1.5fr .7fr .7fr .8fr 1fr auto; gap:.65rem; align-items:center; padding:1rem; border:1px solid var(--border); border-radius:12px; background:var(--bg-secondary); }
 .token-form input,.token-form select { min-width:0; padding:.65rem; border:1px solid var(--border); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); }
 .token-table-wrap { overflow:auto; border:1px solid var(--border); border-radius:12px; background:var(--bg-secondary); }
 .token-table { width:100%; border-collapse:collapse; min-width:1200px; }
