@@ -4,6 +4,7 @@
 *.pyc
 .flask_secret
 photobooth_settings.json
+photobooth_tokens.sqlite3
 transparent logo .png
 static/photos/
 .venv

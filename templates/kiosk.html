@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Photobooth</title>
     <link rel="icon" type="image/png" href="/static/logo.png" />
-    <link rel="stylesheet" href="/static/css/kiosk.css?v=15" />
+    <link rel="stylesheet" href="/static/css/kiosk.css?v=17" />
   </head>
   <body>
     <!-- Session Timer (top-right, hidden by default) -->
@@ -35,13 +35,13 @@
         />
       </div>
       <h1 class="welcome-title">Welcome!</h1>
-      <p class="welcome-sub">Type your name below to get started</p>
+      <p class="welcome-sub">Enter your token number to get started</p>
 
       <div class="name-input-wrap">
         <input
           type="text"
           id="customer-name"
-          placeholder="Your Token No. here..."
+          placeholder="Token number"
           autocomplete="off"
           spellcheck="false"
         />
@@ -277,18 +277,21 @@
 
           <div class="review-actions-compact">
             <button
+              id="btn-take-more"
+              class="big-btn btn-retake-prominent"
+              tabindex="0"
+            >
+              📸 Back to Camera — Take More Photos
+            </button>
+
+            <div style="width: 100%; border-top: 2px solid rgba(0,0,0,0.08); margin: 0.3rem 0;"></div>
+
+            <button
               id="btn-save-customization"
               class="big-btn btn-go"
               tabindex="0"
             >
               Save Custom Photostrip ✨ <kbd class="key-badge">Enter ↵</kbd>
-            </button>
-            <button
-              id="btn-take-more"
-              class="small-btn btn-secondary"
-              tabindex="0"
-            >
-              Take More Photos <kbd class="key-badge">Esc</kbd>
             </button>
             <button
               id="btn-goto-gallery"
@@ -388,6 +391,6 @@
       </div>
     </div>
 
-    <script src="/static/js/kiosk.js?v=14"></script>
+    <script src="/static/js/kiosk.js?v=17"></script>
   </body>
 </html>

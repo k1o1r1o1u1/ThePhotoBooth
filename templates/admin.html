@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photobooth Admin Panel</title>
   <link rel="icon" type="image/png" href="/static/logo.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=5">
+  <link rel="stylesheet" href="/static/css/style.css?v=14">
 </head>
 <body>
   <!-- Persistent corner logo watermark -->
@@ -22,6 +22,8 @@
         <h2>Customer Folders</h2>
         <div style="display: flex; gap: 0.75rem; align-items: center;">
           <input type="text" id="session-search" class="customer-search-input" placeholder="Search customer name...">
+          <button id="btn-refresh-customers" class="back-btn">Refresh</button>
+          <button id="btn-open-tokens" class="back-btn">Tokens & Reports</button>
           <button id="btn-admin-settings" class="back-btn">Settings</button>
         </div>
       </div>
@@ -31,6 +33,27 @@
           <p>Loading customers...</p>
         </div>
       </div>
+    </div>
+
+    <!-- VIEW: Token register and business summary -->
+    <div id="view-tokens" class="view-container">
+      <div class="admin-header-bar">
+        <div style="display:flex;align-items:center;gap:1rem;"><button id="btn-back-from-tokens" class="back-btn">Back</button><h2>Customer Tokens & Reports</h2></div>
+        <div style="display:flex;gap:.65rem;align-items:center;"><button id="btn-refresh-tokens" class="back-btn">Refresh</button><button id="btn-export-tokens" class="back-btn">Export Excel</button><label class="back-btn" style="cursor:pointer;">Import Excel/CSV<input id="token-import-file" type="file" accept=".xlsx,.csv" hidden></label></div>
+      </div>
+      <div class="token-dashboard" id="token-dashboard"></div>
+      <form id="token-form" class="token-form">
+        <input id="token-number" required readonly placeholder="Token No.">
+        <input id="token-customer-name" required placeholder="Customer name">
+        <input id="token-contact" placeholder="Contact no.">
+        <input id="token-email" type="email" placeholder="Email (optional)">
+        <input id="token-people-count" type="number" min="1" step="1" value="1" required placeholder="No. of people">
+        <input id="token-amount" type="number" min="0" step="0.01" placeholder="Amount">
+        <select id="token-payment-mode"><option value="">Payment mode</option><option>Cash</option><option>UPI</option><option>UPI + Cash</option><option>Card</option><option>Other</option></select>
+        <button class="btn btn-primary" type="submit">Save Token</button>
+      </form>
+      <input id="token-search" class="customer-search-input" placeholder="Search token, name, contact, or email..." style="margin:1rem 0;max-width:420px;">
+      <div class="token-table-wrap"><table class="token-table"><thead><tr><th>Token</th><th>Name</th><th>Contact</th><th>Email</th><th>People</th><th>Amount</th><th>Payment</th><th>Booth used</th><th>Printing done</th><th>Print given</th><th>Action</th></tr></thead><tbody id="token-table-body"></tbody></table></div>
     </div>
 
     <!-- VIEW 2: Customer Gallery -->
@@ -207,9 +230,11 @@
 
   <!-- Preview Modal -->
   <div id="preview-modal" class="preview-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; opacity: 0; transition: opacity 0.2s ease;">
-    <div style="max-height: 80vh; position: relative;">
+    <button id="btn-preview-prev" class="preview-nav-btn preview-nav-prev" type="button" aria-label="Previous photo">&#10094;</button>
+    <div id="preview-image-wrap" class="preview-image-wrap">
       <img id="preview-modal-img" src="" style="max-height: 80vh; max-width: 90vw; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
     </div>
+    <button id="btn-preview-next" class="preview-nav-btn preview-nav-next" type="button" aria-label="Next photo">&#10095;</button>
     <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
       <button id="btn-preview-close" class="btn btn-secondary">Cancel</button>
       <button id="btn-preview-download" class="btn btn-secondary">Download JPG</button>
@@ -226,6 +251,6 @@
     </form>
   </div>
 
-  <script src="/static/js/admin.js?v=5"></script>
+  <script src="/static/js/admin.js?v=16"></script>
 </body>
 </html>

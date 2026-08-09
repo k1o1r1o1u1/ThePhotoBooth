@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const COLLAGE_HEIGHT = 3700;
   // --- View Containers ---
   const viewCustomers = document.getElementById('view-customers');
+  const viewTokens = document.getElementById('view-tokens');
   const viewGallery = document.getElementById('view-gallery');
   const viewEditor = document.getElementById('view-editor');
 
@@ -15,6 +16,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSettingsClose = document.getElementById('btn-settings-close');
   const settingSessionDuration = document.getElementById('setting-session-duration');
   const settingsStatus = document.getElementById('settings-status');
+  const btnOpenTokens = document.getElementById('btn-open-tokens');
+  const btnRefreshCustomers = document.getElementById('btn-refresh-customers');
+  const btnBackFromTokens = document.getElementById('btn-back-from-tokens');
+  const btnRefreshTokens = document.getElementById('btn-refresh-tokens');
+  const btnExportTokens = document.getElementById('btn-export-tokens');
+  const tokenImportFile = document.getElementById('token-import-file');
+  const tokenForm = document.getElementById('token-form');
+  const tokenDashboard = document.getElementById('token-dashboard');
+  const tokenTableBody = document.getElementById('token-table-body');
+  const tokenSearch = document.getElementById('token-search');
+  let tokenRows = [];
 
   // --- Gallery View Elements ---
   const galleryGrid = document.getElementById('gallery-grid');
@@ -57,6 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let groupedCustomers = []; // Array of { folder, name, sessions: [] }
   let activeCustomer = null;
   let selectedSession = null;
+  let previewItems = [];
+  let currentPreviewIndex = -1;
   
   let originalImage = new Image();
   let currentFilter = 'normal';
@@ -103,6 +117,165 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     viewElement.classList.add('active-view');
   }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[character]));
+  }
+
+  function renderTokenDashboard(analytics) {
+    if (!tokenDashboard) return;
+    const cards = [
+      ['Customers', analytics.total_customers],
+      ['People', analytics.total_people],
+      ['Revenue', `₹${Number(analytics.total_revenue || 0).toFixed(2)}`],
+      ['Pending booth', analytics.pending_booth],
+      ['Photos taken', analytics.booth_used],
+      ['Prints pending', analytics.pending_prints],
+      ['Printing done', analytics.printing_done],
+      ['Prints given', analytics.photos_given],
+    ];
+    tokenDashboard.innerHTML = cards.map(([label, value]) =>
+      `<div class="token-stat"><span>${label}</span><strong>${value}</strong></div>`).join('');
+  }
+
+  function renderTokens() {
+    if (!tokenTableBody) return;
+    const query = (tokenSearch?.value || '').trim().toLowerCase();
+    const rows = tokenRows.filter(token => [token.token_number, token.customer_name, token.contact_number, token.email]
+      .some(value => String(value || '').toLowerCase().includes(query)));
+    tokenTableBody.innerHTML = rows.map(token => `<tr>
+      <td>${escapeHtml(token.token_number)}${token.is_test ? ' <small>(test)</small>' : ''}</td>
+      <td>${escapeHtml(token.customer_name)}</td><td>${escapeHtml(token.contact_number)}</td><td>${escapeHtml(token.email)}</td><td>${Number(token.people_count || 1)}</td>
+      <td>₹${Number(token.amount || 0).toFixed(2)}</td><td>${escapeHtml(token.payment_mode)}</td>
+      <td><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="booth_used" ${token.booth_used ? 'checked' : ''}> ${token.booth_used ? 'Used' : 'Pending'}</label></td>
+      <td><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="printing_done" ${token.printing_done ? 'checked' : ''}> ${token.printing_done ? 'Done' : 'Pending'}</label></td>
+      <td><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="photo_given" ${token.photo_given ? 'checked' : ''}> ${token.photo_given ? 'Given' : 'Pending'}</label></td>
+      <td><div class="token-actions">
+        <button class="token-edit-btn" data-edit-token="${escapeHtml(token.token_number)}">Edit</button>
+        ${token.contact_number ? `<button class="token-whatsapp-btn" data-whatsapp-token="${escapeHtml(token.token_number)}">WhatsApp</button>` : ''}
+        ${token.email ? `<button class="token-email-btn" data-email-token="${escapeHtml(token.token_number)}">Email</button>` : ''}
+        ${token.is_test ? '<small>Permanent test token</small>' : `<button class="token-delete-btn" data-delete-token="${escapeHtml(token.token_number)}">Delete</button>`}
+      </div></td>
+    </tr>`).join('') || '<tr><td colspan="11">No tokens found.</td></tr>';
+  }
+
+  async function fetchTokens() {
+    const response = await fetch('/api/admin/tokens');
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not load tokens');
+    tokenRows = data.tokens;
+    renderTokenDashboard(data.analytics);
+    renderTokens();
+  }
+
+  async function prepareNextTokenNumber() {
+    const input = document.getElementById('token-number');
+    if (!input) return;
+    const response = await fetch('/api/admin/tokens/next');
+    const data = await response.json();
+    if (response.ok) input.value = data.token_number;
+  }
+
+  if (btnOpenTokens) btnOpenTokens.addEventListener('click', async () => {
+    switchView(viewTokens);
+    try { await fetchTokens(); await prepareNextTokenNumber(); } catch (error) { alert(error.message); }
+  });
+  if (btnRefreshCustomers) btnRefreshCustomers.addEventListener('click', fetchSessions);
+  if (btnRefreshTokens) btnRefreshTokens.addEventListener('click', async () => {
+    try { await fetchTokens(); } catch (error) { alert(error.message); }
+  });
+  if (btnBackFromTokens) btnBackFromTokens.addEventListener('click', () => switchView(viewCustomers));
+  if (tokenSearch) tokenSearch.addEventListener('input', renderTokens);
+  if (btnExportTokens) btnExportTokens.addEventListener('click', () => { window.location.assign('/api/admin/tokens/export'); });
+  if (tokenForm) tokenForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const body = {
+      token_number: document.getElementById('token-number').value,
+      customer_name: document.getElementById('token-customer-name').value,
+      contact_number: document.getElementById('token-contact').value,
+      email: document.getElementById('token-email').value,
+      people_count: document.getElementById('token-people-count').value,
+      amount: document.getElementById('token-amount').value,
+      payment_mode: document.getElementById('token-payment-mode').value,
+    };
+    const response = await fetch('/api/admin/tokens', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+    const data = await response.json();
+    if (!response.ok) return alert(data.error || 'Could not save token');
+    tokenForm.reset();
+    tokenForm.querySelector('button[type="submit"]').textContent = 'Save Token';
+    await fetchTokens();
+    await prepareNextTokenNumber();
+  });
+  if (tokenImportFile) tokenImportFile.addEventListener('change', async () => {
+    const file = tokenImportFile.files[0];
+    if (!file) return;
+    const formData = new FormData(); formData.append('file', file);
+    const response = await fetch('/api/admin/tokens/import', { method: 'POST', body: formData });
+    const data = await response.json();
+    tokenImportFile.value = '';
+    if (!response.ok) return alert(data.error || 'Import failed');
+    alert(`${data.imported} token(s) imported.`);
+    await fetchTokens();
+  });
+  if (tokenTableBody) tokenTableBody.addEventListener('change', async event => {
+    const checkbox = event.target;
+    if (!checkbox.matches('input[data-token][data-field]')) return;
+    const response = await fetch(`/api/admin/tokens/${encodeURIComponent(checkbox.dataset.token)}/status`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({field: checkbox.dataset.field, value: checkbox.checked})
+    });
+    if (!response.ok) { alert('Could not update status'); checkbox.checked = !checkbox.checked; return; }
+    await fetchTokens();
+  });
+  if (tokenTableBody) tokenTableBody.addEventListener('click', async event => {
+    const editButton = event.target.closest('[data-edit-token]');
+    if (editButton) {
+      const token = tokenRows.find(row => row.token_number === editButton.dataset.editToken);
+      if (!token) return;
+      document.getElementById('token-number').value = token.token_number;
+      document.getElementById('token-customer-name').value = token.customer_name || '';
+      document.getElementById('token-contact').value = token.contact_number || '';
+      document.getElementById('token-email').value = token.email || '';
+      document.getElementById('token-people-count').value = token.people_count || 1;
+      document.getElementById('token-amount').value = token.amount || '';
+      document.getElementById('token-payment-mode').value = token.payment_mode || '';
+      tokenForm.querySelector('button[type="submit"]').textContent = 'Update Token';
+      tokenForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('token-customer-name').focus();
+      return;
+    }
+    const whatsappButton = event.target.closest('[data-whatsapp-token]');
+    if (whatsappButton) {
+      const token = tokenRows.find(row => row.token_number === whatsappButton.dataset.whatsappToken);
+      if (!token) return;
+      let number = String(token.contact_number || '').replace(/\D/g, '');
+      if (number.length === 10) number = `91${number}`;
+      if (!number) return alert('Add a contact number before opening WhatsApp.');
+      const message = `Hi ${token.customer_name}, your Chini Champra Creations photobooth photos are ready.`;
+      window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+      return;
+    }
+    const emailButton = event.target.closest('[data-email-token]');
+    if (emailButton) {
+      const token = tokenRows.find(row => row.token_number === emailButton.dataset.emailToken);
+      if (!token?.email) return alert('Add an email address before opening email.');
+      const subject = 'Your Chini Champra Creations photos are ready';
+      const body = `Hi ${token.customer_name},\n\nYour Chini Champra Creations photobooth photos are ready.\n\nThank you!`;
+      window.location.href = `mailto:${encodeURIComponent(token.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      return;
+    }
+    const button = event.target.closest('[data-delete-token]');
+    if (!button) return;
+    const tokenNumber = button.dataset.deleteToken;
+    if (!confirm(`Delete customer token ${tokenNumber}? Their saved photo files will be kept.`)) return;
+    const response = await fetch(`/api/admin/tokens/${encodeURIComponent(tokenNumber)}`, { method: 'DELETE' });
+    const data = await response.json();
+    if (!response.ok) return alert(data.error || 'Could not delete customer');
+    await fetchTokens();
+    await prepareNextTokenNumber();
+  });
 
   btnBackToCustomers.addEventListener('click', () => {
     switchView(viewCustomers);
@@ -214,6 +387,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderGallery(customerData) {
     if (!galleryGrid) return;
     galleryGrid.innerHTML = '';
+    previewItems = [];
+    currentPreviewIndex = -1;
     
     if (customerData.sessions.length === 0) {
       galleryGrid.innerHTML = '<p>No collages found for this customer.</p>';
@@ -225,25 +400,29 @@ document.addEventListener('DOMContentLoaded', () => {
       return a.timestamp.localeCompare(b.timestamp);
     });
 
-    sortedSessions.forEach((sess) => {
+    sortedSessions.forEach((sess, index) => {
+      const sessionLabel = `Session ${index + 1}`;
       // Original collage
       if (sess.collage_url) {
-        addGalleryItem(sess.collage_url, sess, customerData, false);
+        addGalleryItem(sess.collage_url, sess, customerData, false, sessionLabel);
       }
       
       // All edited versions
       const editedUrls = sess.collage_edited_urls || [];
       editedUrls.forEach((editUrl) => {
-        addGalleryItem(editUrl, sess, customerData, true);
+        addGalleryItem(editUrl, sess, customerData, true, `${sessionLabel} (Edited)`);
       });
+
     });
   }
   
-  function addGalleryItem(imgUrl, sess, customerData, isEdited) {
+  function addGalleryItem(imgUrl, sess, customerData, isEdited, sessionLabel) {
+    previewItems.push({ imgUrl, sess, customerData, isEdited });
     const item = document.createElement('div');
     item.className = 'gallery-item';
     item.style.position = 'relative';
     item.innerHTML = `
+      <div class="gallery-session-label">${sessionLabel}</div>
       <img src="${imgUrl}?t=${new Date().getTime()}" alt="Collage">
       <div class="gallery-item-time">${sess.time}</div>
     `;
@@ -253,10 +432,62 @@ document.addEventListener('DOMContentLoaded', () => {
     galleryGrid.appendChild(item);
   }
 
+  async function copyOriginalPhoto(imgUrl) {
+    try {
+      const response = await fetch(imgUrl);
+      if (!response.ok) throw new Error('Photo could not be read');
+      const blob = await response.blob();
+      if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+        throw new Error('Clipboard image support is unavailable');
+      }
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      alert('Original photo copied. Open Photoshop and press Ctrl+V.');
+    } catch (error) {
+      alert('Could not copy this photo automatically. Use Download Original and drag that JPG into Photoshop.');
+    }
+  }
+
+  function addOriginalGalleryItem(imgUrl, sess, customerData, photoNumber) {
+    const item = document.createElement('div');
+    item.className = 'gallery-item gallery-original-item';
+    item.style.position = 'relative';
+    const image = document.createElement('img');
+    image.src = `${imgUrl}?t=${Date.now()}`;
+    image.alt = `Original photo ${photoNumber}`;
+    image.draggable = true;
+    image.title = 'Drag into Photoshop, or use Copy Original';
+    image.addEventListener('click', () => openPreviewModal(imgUrl, sess, customerData, false));
+
+    const label = document.createElement('div');
+    label.className = 'gallery-item-time';
+    label.textContent = `Original photo ${photoNumber} · full resolution`;
+
+    const actions = document.createElement('div');
+    actions.className = 'original-photo-actions';
+    const copyButton = document.createElement('button');
+    copyButton.className = 'original-photo-btn';
+    copyButton.textContent = 'Copy Original';
+    copyButton.addEventListener('click', event => {
+      event.stopPropagation();
+      copyOriginalPhoto(imgUrl);
+    });
+    const downloadLink = document.createElement('a');
+    downloadLink.className = 'original-photo-btn';
+    downloadLink.href = getDownloadUrl(imgUrl);
+    downloadLink.textContent = 'Download JPG';
+    downloadLink.addEventListener('click', event => event.stopPropagation());
+    actions.append(copyButton, downloadLink);
+    item.append(image, label, actions);
+    galleryGrid.appendChild(item);
+  }
+
   // --- Preview Modal ---
   const previewModal = document.getElementById('preview-modal');
   const previewModalImg = document.getElementById('preview-modal-img');
+  const previewImageWrap = document.getElementById('preview-image-wrap');
   const btnPreviewClose = document.getElementById('btn-preview-close');
+  const btnPreviewPrev = document.getElementById('btn-preview-prev');
+  const btnPreviewNext = document.getElementById('btn-preview-next');
   const btnPreviewDownload = document.getElementById('btn-preview-download');
   const btnPreviewEdit = document.getElementById('btn-preview-edit');
   
@@ -278,6 +509,9 @@ document.addEventListener('DOMContentLoaded', () => {
     currentPreviewCustomer = customerData;
     currentPreviewImgUrl = imgUrl;
     currentPreviewIsEdited = isEdited;
+    currentPreviewIndex = previewItems.findIndex(item => item.imgUrl === imgUrl);
+    previewModal.classList.remove('is-zoomed');
+    if (previewImageWrap) previewImageWrap.scrollTo({ top: 0, left: 0 });
     previewModalImg.src = imgUrl + '?t=' + new Date().getTime();
     previewModal.style.display = 'flex';
     setTimeout(() => {
@@ -287,12 +521,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnPreviewClose) {
     btnPreviewClose.addEventListener('click', () => {
-      previewModal.style.opacity = '0';
-      setTimeout(() => {
-        previewModal.style.display = 'none';
-      }, 200);
+      closePreviewModal();
     });
   }
+
+  function closePreviewModal() {
+    previewModal.classList.remove('is-zoomed');
+    previewModal.style.opacity = '0';
+    setTimeout(() => { previewModal.style.display = 'none'; }, 200);
+  }
+
+  function navigatePreview(direction) {
+    if (!previewItems.length || currentPreviewIndex < 0) return;
+    const nextIndex = (currentPreviewIndex + direction + previewItems.length) % previewItems.length;
+    const item = previewItems[nextIndex];
+    openPreviewModal(item.imgUrl, item.sess, item.customerData, item.isEdited);
+  }
+
+  if (btnPreviewPrev) btnPreviewPrev.addEventListener('click', () => navigatePreview(-1));
+  if (btnPreviewNext) btnPreviewNext.addEventListener('click', () => navigatePreview(1));
+  if (previewModalImg) previewModalImg.addEventListener('click', event => {
+    event.stopPropagation();
+    previewModal.classList.toggle('is-zoomed');
+  });
+  if (previewModal) previewModal.addEventListener('click', event => {
+    if (event.target === previewModal) closePreviewModal();
+  });
+  document.addEventListener('keydown', event => {
+    if (previewModal?.style.display !== 'flex') return;
+    if (event.key === 'ArrowLeft') { event.preventDefault(); navigatePreview(-1); }
+    else if (event.key === 'ArrowRight') { event.preventDefault(); navigatePreview(1); }
+    else if (event.key === 'Escape') { event.preventDefault(); closePreviewModal(); }
+  });
 
   function closeSettings() {
     settingsModal.style.display = 'none';
@@ -429,13 +689,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    // If editing an already-edited image, load it as a flat image (no layered rebuild)
-    // If editing the original, load individual captures for layered editing
+    // Every gallery version uses the original captures as editable layers.
+    // This lets staff change the frame again without finding the original item.
     photoImages = [];
     stickersImage.src = '';
     
-    if (!isEdited && session.files && session.files.length > 0) {
-      // Load individual capture photos for layered editing on Original
+    if (session.files && session.files.length > 0) {
+      // Load individual capture photos for layered editing.
       Promise.all(session.files.map(url => {
         return new Promise(resolve => {
           const img = new Image();

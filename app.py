@@ -4,8 +4,11 @@ import time
 import base64
 import sys
 import json
+import csv
+import sqlite3
+from datetime import datetime
 from datetime import timedelta
-from flask import Flask, request, jsonify, render_template, session, send_from_directory
+from flask import Flask, request, jsonify, render_template, session, send_from_directory, send_file
 from PIL import Image, ImageOps, ImageFilter, ImageEnhance
 from io import BytesIO
 from sticker_packs import draw_sticker_pack, STICKER_PACK_OPTIONS
@@ -15,6 +18,7 @@ APP_DATA_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) 
 BUNDLED_STATIC_DIR = os.path.join(RESOURCE_DIR, 'static')
 PHOTOS_DIR = os.path.join(APP_DATA_DIR, 'static', 'photos')
 SETTINGS_PATH = os.path.join(APP_DATA_DIR, 'photobooth_settings.json')
+TOKENS_DB_PATH = os.path.join(APP_DATA_DIR, 'photobooth_tokens.sqlite3')
 DEFAULT_SETTINGS = {
     'session_duration_minutes': 4,
 }
@@ -71,6 +75,68 @@ app.permanent_session_lifetime = timedelta(minutes=settings['session_duration_mi
 
 # Ensure static/photos directory exists
 os.makedirs(PHOTOS_DIR, exist_ok=True)
+
+
+def get_token_db():
+    connection = sqlite3.connect(TOKENS_DB_PATH)
+    connection.row_factory = sqlite3.Row
+    return connection
+
+
+def initialise_token_db():
+    with get_token_db() as connection:
+        connection.execute('''
+            CREATE TABLE IF NOT EXISTS tokens (
+                token_number TEXT PRIMARY KEY,
+                customer_name TEXT NOT NULL,
+                contact_number TEXT DEFAULT '',
+                email TEXT DEFAULT '',
+                people_count INTEGER NOT NULL DEFAULT 1,
+                amount REAL NOT NULL DEFAULT 0,
+                payment_mode TEXT DEFAULT '',
+                booth_used INTEGER NOT NULL DEFAULT 0,
+                photo_given INTEGER NOT NULL DEFAULT 0,
+                printing_done INTEGER NOT NULL DEFAULT 0,
+                is_test INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                booth_used_at TEXT,
+                photo_given_at TEXT,
+                printing_done_at TEXT
+            )
+        ''')
+        connection.execute('''
+            INSERT OR IGNORE INTO tokens
+                (token_number, customer_name, amount, payment_mode, is_test, created_at)
+            VALUES ('0', 'Test Customer', 0, 'Test', 1, ?)
+        ''', (datetime.now().isoformat(timespec='seconds'),))
+        columns = {row['name'] for row in connection.execute('PRAGMA table_info(tokens)')}
+        if 'email' not in columns:
+            connection.execute("ALTER TABLE tokens ADD COLUMN email TEXT DEFAULT ''")
+        if 'people_count' not in columns:
+            connection.execute('ALTER TABLE tokens ADD COLUMN people_count INTEGER NOT NULL DEFAULT 1')
+        if 'printing_done' not in columns:
+            connection.execute('ALTER TABLE tokens ADD COLUMN printing_done INTEGER NOT NULL DEFAULT 0')
+        if 'printing_done_at' not in columns:
+            connection.execute('ALTER TABLE tokens ADD COLUMN printing_done_at TEXT')
+
+
+def normalise_token_number(value):
+    return str(value or '').strip()
+
+
+def token_as_dict(row):
+    return dict(row) if row else None
+
+
+def get_token(token_number):
+    with get_token_db() as connection:
+        row = connection.execute(
+            'SELECT * FROM tokens WHERE token_number = ?', (normalise_token_number(token_number),)
+        ).fetchone()
+    return token_as_dict(row)
+
+
+initialise_token_db()
 
 
 @app.route('/static/photos/<path:filename>')
@@ -158,6 +224,178 @@ def update_settings():
     app.permanent_session_lifetime = timedelta(minutes=duration + 1)
     return jsonify({'status': 'success', 'session_duration_minutes': duration})
 
+
+def token_analytics(connection):
+    rows = connection.execute('SELECT * FROM tokens WHERE is_test = 0').fetchall()
+    tokens = [dict(row) for row in rows]
+    return {
+        'total_customers': len(tokens),
+        'total_people': sum(max(1, int(token['people_count'] or 1)) for token in tokens),
+        'total_revenue': sum(float(token['amount'] or 0) for token in tokens),
+        'pending_booth': sum(not token['booth_used'] for token in tokens),
+        'booth_used': sum(bool(token['booth_used']) for token in tokens),
+        'pending_prints': sum(bool(token['booth_used']) and not token['printing_done'] for token in tokens),
+        'printing_done': sum(bool(token['printing_done']) for token in tokens),
+        'photos_given': sum(bool(token['photo_given']) for token in tokens),
+    }
+
+
+@app.route('/api/admin/tokens', methods=['GET'])
+def list_tokens():
+    with get_token_db() as connection:
+        rows = connection.execute(
+            'SELECT * FROM tokens ORDER BY is_test ASC, CAST(token_number AS INTEGER), token_number'
+        ).fetchall()
+        return jsonify({'tokens': [dict(row) for row in rows], 'analytics': token_analytics(connection)})
+
+
+@app.route('/api/admin/tokens/next', methods=['GET'])
+def next_token_number():
+    """Reserve no record, but provide the next numeric token for the entry form."""
+    with get_token_db() as connection:
+        rows = connection.execute('SELECT token_number FROM tokens').fetchall()
+    numeric_tokens = [int(row['token_number']) for row in rows if str(row['token_number']).isdigit()]
+    return jsonify({'token_number': str((max(numeric_tokens) if numeric_tokens else 0) + 1)})
+
+
+@app.route('/api/admin/tokens', methods=['POST'])
+def save_token():
+    data = request.json or {}
+    token_number = normalise_token_number(data.get('token_number'))
+    customer_name = str(data.get('customer_name') or '').strip()
+    if not token_number or not customer_name:
+        return jsonify({'error': 'Token number and customer name are required'}), 400
+    try:
+        amount = float(data.get('amount') or 0)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Amount must be a valid number'}), 400
+    try:
+        people_count = max(1, int(data.get('people_count') or 1))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Number of people must be a whole number'}), 400
+    now = datetime.now().isoformat(timespec='seconds')
+    with get_token_db() as connection:
+        connection.execute('''
+            INSERT INTO tokens (token_number, customer_name, contact_number, email, people_count, amount, payment_mode, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(token_number) DO UPDATE SET
+              customer_name = excluded.customer_name,
+              contact_number = excluded.contact_number,
+              email = excluded.email,
+              people_count = excluded.people_count,
+              amount = excluded.amount,
+              payment_mode = excluded.payment_mode
+        ''', (token_number, customer_name, str(data.get('contact_number') or '').strip(),
+              str(data.get('email') or '').strip(), people_count, amount, str(data.get('payment_mode') or '').strip(), now))
+    return jsonify({'status': 'success'})
+
+
+@app.route('/api/admin/tokens/<token_number>', methods=['DELETE'])
+def delete_token(token_number):
+    if token_number == '0':
+        return jsonify({'error': 'The permanent test token cannot be deleted'}), 400
+    with get_token_db() as connection:
+        result = connection.execute('DELETE FROM tokens WHERE token_number = ?', (token_number,))
+        if not result.rowcount:
+            return jsonify({'error': 'Customer token not found'}), 404
+    return jsonify({'status': 'success'})
+
+
+@app.route('/api/admin/tokens/<token_number>/status', methods=['POST'])
+def update_token_status(token_number):
+    data = request.json or {}
+    field = data.get('field')
+    if field not in {'booth_used', 'printing_done', 'photo_given'}:
+        return jsonify({'error': 'Invalid status field'}), 400
+    value = 1 if data.get('value') else 0
+    timestamp_field = f'{field}_at'
+    with get_token_db() as connection:
+        result = connection.execute(
+            f'UPDATE tokens SET {field} = ?, {timestamp_field} = ? WHERE token_number = ?',
+            (value, datetime.now().isoformat(timespec='seconds') if value else None, token_number),
+        )
+        if not result.rowcount:
+            return jsonify({'error': 'Token not found'}), 404
+    return jsonify({'status': 'success'})
+
+
+@app.route('/api/admin/tokens/export')
+def export_tokens():
+    try:
+        from openpyxl import Workbook
+    except ImportError:
+        return jsonify({'error': 'Excel export requires openpyxl. Rebuild after installing requirements.txt.'}), 500
+    with get_token_db() as connection:
+        rows = [dict(row) for row in connection.execute('SELECT * FROM tokens ORDER BY token_number')]
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = 'Customers'
+    headers = ['Token No', 'Name', 'Contact No', 'Email', 'No. of People', 'Amount', 'Payment Mode', 'Used Booth', 'Printing Done', 'Photo Given', 'Created At', 'Booth Used At', 'Printing Done At', 'Photo Given At']
+    sheet.append(headers)
+    for row in rows:
+        sheet.append([row['token_number'], row['customer_name'], row['contact_number'], row['email'], row['people_count'], row['amount'], row['payment_mode'],
+                      'Yes' if row['booth_used'] else 'No', 'Yes' if row['printing_done'] else 'No', 'Yes' if row['photo_given'] else 'No', row['created_at'],
+                      row['booth_used_at'] or '', row['printing_done_at'] or '', row['photo_given_at'] or ''])
+    for column in sheet.columns:
+        sheet.column_dimensions[column[0].column_letter].width = min(24, max(12, max(len(str(cell.value or '')) for cell in column) + 2))
+    stream = BytesIO()
+    workbook.save(stream)
+    stream.seek(0)
+    return send_file(stream, as_attachment=True, download_name='photobooth_customers.xlsx',
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+@app.route('/api/admin/tokens/import', methods=['POST'])
+def import_tokens():
+    upload = request.files.get('file')
+    if not upload or not upload.filename:
+        return jsonify({'error': 'Choose an Excel or CSV file first'}), 400
+    try:
+        if upload.filename.lower().endswith('.csv'):
+            rows = list(csv.DictReader(upload.stream.read().decode('utf-8-sig').splitlines()))
+        else:
+            from openpyxl import load_workbook
+            workbook = load_workbook(upload, read_only=True, data_only=True)
+            sheet = workbook.active
+            values = list(sheet.iter_rows(values_only=True))
+            headers = [str(value or '').strip() for value in values[0]]
+            rows = [dict(zip(headers, row)) for row in values[1:] if any(value is not None for value in row)]
+    except Exception as error:
+        return jsonify({'error': f'Could not read file: {error}'}), 400
+
+    def find(row, *names):
+        lowered = {str(key).strip().lower(): value for key, value in row.items()}
+        for name in names:
+            if name.lower() in lowered:
+                return lowered[name.lower()]
+        return ''
+
+    imported = 0
+    with get_token_db() as connection:
+        for row in rows:
+            token_number = normalise_token_number(find(row, 'Token No', 'Token Number', 'Token'))
+            customer_name = str(find(row, 'Name', 'Customer Name') or '').strip()
+            if not token_number or not customer_name:
+                continue
+            try:
+                amount = float(find(row, 'Amount') or 0)
+            except (TypeError, ValueError):
+                amount = 0
+            try:
+                people_count = max(1, int(find(row, 'No. of People', 'No of People', 'People', 'People Count') or 1))
+            except (TypeError, ValueError):
+                people_count = 1
+            connection.execute('''
+                INSERT INTO tokens (token_number, customer_name, contact_number, email, people_count, amount, payment_mode, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(token_number) DO UPDATE SET customer_name=excluded.customer_name,
+                  contact_number=excluded.contact_number, email=excluded.email, people_count=excluded.people_count, amount=excluded.amount, payment_mode=excluded.payment_mode
+            ''', (token_number, customer_name, str(find(row, 'Contact No', 'Contact Number', 'Phone') or ''),
+                  str(find(row, 'Email', 'Email Address') or ''), people_count, amount, str(find(row, 'Payment Mode', 'Payment') or ''),
+                  datetime.now().isoformat(timespec='seconds')))
+            imported += 1
+    return jsonify({'status': 'success', 'imported': imported})
+
 # ---------------------------------------------------------------------------
 # Session handling – the kiosk start endpoint also acts as a login
 # ---------------------------------------------------------------------------
@@ -165,20 +403,57 @@ def update_settings():
 def make_session_permanent():
     session.permanent = True
 
+@app.route('/api/token/login', methods=['POST'])
+def token_login():
+    """Validate a customer token and record that the booth has been used."""
+    data = request.json or {}
+    token_number = normalise_token_number(data.get('token_number'))
+    if not token_number:
+        return jsonify({'error': 'Enter your token number'}), 400
+
+    token = get_token(token_number)
+    if not token:
+        return jsonify({'error': 'This token was not found. Please ask a staff member for help.'}), 404
+    if token['booth_used'] and not token['is_test']:
+        return jsonify({'error': 'This token has already been used. Please ask a staff member for help.'}), 409
+
+    now = datetime.now().isoformat(timespec='seconds')
+    with get_token_db() as connection:
+        connection.execute(
+            'UPDATE tokens SET booth_used = 1, booth_used_at = COALESCE(booth_used_at, ?) WHERE token_number = ?',
+            (now, token_number),
+        )
+
+    session['token_number'] = token_number
+    session['customer_name'] = token['customer_name']
+    session['session_dir'] = sanitize_filename(token_number) or 'token'
+    os.makedirs(os.path.join(PHOTOS_DIR, session['session_dir']), exist_ok=True)
+    return jsonify({
+        'token_number': token_number,
+        'customer_name': token['customer_name'],
+        'session_dir': session['session_dir'],
+        'is_test': bool(token['is_test']),
+    })
+
 @app.route('/api/session/start', methods=['POST'])
 def start_session():
     data = request.json or {}
-    customer_name = data.get('customer_name', 'Guest').strip() or 'Guest'
-    sanitized_name = sanitize_filename(customer_name)
-    session_dir_name = sanitized_name
+    token_number = normalise_token_number(data.get('token_number') or session.get('token_number'))
+    token = get_token(token_number)
+    if not token:
+        return jsonify({'error': 'A valid token is required to start a session'}), 401
+    customer_name = token['customer_name']
+    session_dir_name = sanitize_filename(token_number) or 'token'
     session_path = os.path.join(PHOTOS_DIR, session_dir_name)
     os.makedirs(session_path, exist_ok=True)
     # Store in Flask session for later requests
     session['customer_name'] = customer_name
+    session['token_number'] = token_number
     session['session_dir'] = session_dir_name
     return jsonify({
         'session_dir': session_dir_name,
-        'customer_name': customer_name
+        'customer_name': customer_name,
+        'token_number': token_number,
     })
 
 # ---------------------------------------------------------------------------
@@ -433,11 +708,16 @@ def edit_existing():
 def get_sessions():
     try:
         sessions = []
+        with get_token_db() as connection:
+            token_names = {
+                row['token_number']: row['customer_name']
+                for row in connection.execute('SELECT token_number, customer_name FROM tokens')
+            }
         if os.path.exists(PHOTOS_DIR):
             for folder_name in sorted(os.listdir(PHOTOS_DIR)):
                 folder_path = os.path.join(PHOTOS_DIR, folder_name)
                 if not os.path.isdir(folder_path): continue
-                customer_name = folder_name.replace('_', ' ')
+                customer_name = token_names.get(folder_name, folder_name.replace('_', ' '))
                 
                 sessions_dict = {}
                 for file_name in os.listdir(folder_path):
@@ -504,8 +784,10 @@ def customer_gallery():
     if not customer_name:
         return jsonify({'error': 'Not logged in'}), 401
     sessions = []
-    sanitized_name = sanitize_filename(customer_name)
-    folder_path = os.path.join(PHOTOS_DIR, sanitized_name)
+    session_dir = session.get('session_dir')
+    if not session_dir:
+        return jsonify({'error': 'No active token session'}), 401
+    folder_path = os.path.join(PHOTOS_DIR, session_dir)
     
     if os.path.exists(folder_path) and os.path.isdir(folder_path):
         sessions_dict = {}
@@ -528,7 +810,7 @@ def customer_gallery():
                     
                 if ts not in sessions_dict:
                     sessions_dict[ts] = {
-                        'folder': sanitized_name,
+                        'folder': session_dir,
                         'customer_name': customer_name,
                         'timestamp': ts,
                         'files': [],
@@ -537,7 +819,7 @@ def customer_gallery():
                         'gif_url': None
                     }
                 
-                file_path = f"/static/photos/{sanitized_name}/{file_name}"
+                file_path = f"/static/photos/{session_dir}/{file_name}"
                 if file_name.startswith('capture_'):
                     sessions_dict[ts]['files'].append(file_path)
                 elif file_name.startswith('collage_edited_'):

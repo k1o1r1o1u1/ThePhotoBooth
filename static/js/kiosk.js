@@ -45,13 +45,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnLightboxDelete = document.getElementById('btn-lightbox-delete');
   const btnLightboxEdit = document.getElementById('btn-lightbox-edit');
   let currentLightboxImgUrl = null;
+  let currentLightboxSession = null;
 
   // =========================================================================
   // Application State
   // =========================================================================
   let isEditingGallerySession = false;
   let currentGallerySessionTimestamp = null;
+  let savedFrameColor = '#ffffff';
   let customerName = '';
+  let customerToken = '';
   const TARGET_PHOTO_COUNT = 4; // always 4 photos
   let currentSessionDir = '';
   let webcamStream = null;
@@ -182,15 +185,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const end = parseInt(raw, 10);
     if (!Number.isFinite(end)) return null;
     const savedCustomer = localStorage.getItem(TIMER_CUSTOMER_STORAGE_KEY);
-    if (savedCustomer && customerName && savedCustomer !== customerName) return null;
+    if (savedCustomer && customerToken && savedCustomer !== customerToken) return null;
     return end;
   }
 
   function persistTimerEnd(end) {
     if (end) {
       localStorage.setItem(TIMER_END_STORAGE_KEY, String(end));
-      if (customerName) {
-        localStorage.setItem(TIMER_CUSTOMER_STORAGE_KEY, customerName);
+      if (customerToken) {
+        localStorage.setItem(TIMER_CUSTOMER_STORAGE_KEY, customerToken);
       }
     } else {
       localStorage.removeItem(TIMER_END_STORAGE_KEY);
@@ -285,18 +288,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // Login Persistence (localStorage)
   // =========================================================================
   async function checkExistingLogin() {
-    const saved = localStorage.getItem('photobooth_customer');
+    const saved = localStorage.getItem('photobooth_token');
     if (saved) {
-      customerName = saved;
-      dashboardName.textContent = customerName;
+      customerToken = saved;
       // Re-establish server-side session so gallery and other APIs work
       try {
-        await fetch('/api/session/start', {
+        const response = await fetch('/api/session/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customer_name: customerName })
+          body: JSON.stringify({ token_number: customerToken })
         });
-      } catch (_) { /* proceed even if server is temporarily unreachable */ }
+        if (!response.ok) throw new Error('Token session expired');
+        const data = await response.json();
+        customerName = data.customer_name;
+        dashboardName.textContent = customerName;
+      } catch (_) {
+        localStorage.removeItem('photobooth_token');
+        customerToken = '';
+        showScreen(screenLogin);
+        return;
+      }
       showScreen(screenDashboard);
       startIdleWatcher();
       restoreSessionTimerIfActive();
@@ -310,8 +321,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Login
   // =========================================================================
   btnLogin.addEventListener('click', async () => {
-    const name = inputName.value.trim();
-    if (!name) {
+    const token = inputName.value.trim();
+    if (!token) {
       inputName.focus();
       inputName.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.5)';
       inputName.style.borderColor = '#ef4444';
@@ -321,13 +332,29 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 1500);
       return;
     }
-    customerName = name;
-    localStorage.setItem('photobooth_customer', customerName);
-    dashboardName.textContent = customerName;
-    stopSessionTimer();
-    showScreen(screenDashboard);
-    startIdleWatcher();
-    await startWebcamStream();
+    btnLogin.disabled = true;
+    try {
+      const response = await fetch('/api/token/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token_number: token })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not validate token');
+      customerToken = data.token_number;
+      customerName = data.customer_name;
+      localStorage.setItem('photobooth_token', customerToken);
+      dashboardName.textContent = customerName;
+      stopSessionTimer();
+      showScreen(screenDashboard);
+      startIdleWatcher();
+      await startWebcamStream();
+    } catch (error) {
+      alert(error.message);
+      inputName.focus();
+    } finally {
+      btnLogin.disabled = false;
+    }
   });
 
   inputName.addEventListener('keydown', (e) => {
@@ -366,8 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
     isCapturing = false;
     capturedImages = [];
     countdownOverlay.classList.add('hidden');
-    localStorage.removeItem('photobooth_customer');
+    localStorage.removeItem('photobooth_token');
     customerName = '';
+    customerToken = '';
     currentSessionDir = '';
     webcamStreamRequestId++;
     stopWebcam();
@@ -381,8 +409,9 @@ document.addEventListener('DOMContentLoaded', () => {
     stopThankYouTimer();
     stopIdleWatcher();
     stopSessionTimer();
-    localStorage.removeItem('photobooth_customer');
+    localStorage.removeItem('photobooth_token');
     customerName = '';
+    customerToken = '';
     webcamStreamRequestId++;
     stopWebcam();
     inputName.value = '';
@@ -516,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('/api/session/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customer_name: customerName })
+        body: JSON.stringify({ token_number: customerToken })
       });
 
       const sessionData = await response.json();
@@ -647,6 +676,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const customColorPicker = document.getElementById('custom-color-picker');
 
+  function updateSaveCustomizationState() {
+    if (!btnSaveCustomization) return;
+    const hasUnsavedFrameChange = selectedFrameColor !== savedFrameColor;
+    btnSaveCustomization.disabled = !hasUnsavedFrameChange;
+    btnSaveCustomization.innerHTML = hasUnsavedFrameChange
+      ? 'Save This Frame Color &#10024; <kbd class="key-badge">Enter &#8629;</kbd>'
+      : 'Saved &#10003;';
+  }
+
   // Color dots click events (Review Screen)
   colorDots.forEach(dot => {
     dot.addEventListener('click', async () => {
@@ -689,6 +727,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function updateFramePreview(hexColor) {
     selectedFrameColor = hexColor;
     await updateFramePreviewFull();
+    updateSaveCustomizationState();
   }
 
   // Save customization button
@@ -713,17 +752,14 @@ document.addEventListener('DOMContentLoaded', () => {
         imgCollagePreview.src = result.collage_url + '?t=' + Date.now();
         btnSaveCustomization.textContent = 'Saved! ✨';
         
-        // Stay on the review/edit screen after saving; do not redirect to gallery.
-        // Clear the editing state so subsequent actions start fresh and don't
-        // unintentionally re-use the previous `frame_color` or edit endpoint.
-        isEditingGallerySession = false;
-        currentGallerySessionTimestamp = null;
+        // Keep the original session selected. A customer may save more than
+        // one frame colour during the same review without re-uploading photos.
+        savedFrameColor = selectedFrameColor;
       } catch (err) {
         alert('Failed to save customization: ' + err.message);
       } finally {
         setTimeout(() => {
-          btnSaveCustomization.disabled = false;
-          btnSaveCustomization.textContent = 'Save Custom Photostrip ✨';
+          updateSaveCustomizationState();
         }, 1500);
       }
     });
@@ -752,6 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Populate Review Screen — reset customizations to defaults
       selectedFrameColor = '#ffffff';
+      savedFrameColor = '#ffffff';
       colorDots.forEach(d => {
         d.classList.toggle('active', d.dataset.color === '#ffffff');
       });
@@ -762,6 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentGallerySessionTimestamp = result.session_timestamp;
       isEditingGallerySession = true;
       capturedImages = []; // Clear base64 arrays since they are saved on server now
+      updateSaveCustomizationState();
 
       // Populate Individual Photos
       const galleryContainer = document.getElementById('individual-photos-gallery');
@@ -789,9 +827,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // Review Actions
   // =========================================================================
-  btnTakeMore.addEventListener('click', () => {
+  btnTakeMore.addEventListener('click', async () => {
     capturedImages = [];
-    startCaptureSession(); // go directly to burst, no setup screen
+    await startCaptureSession();
   });
 
   // =========================================================================
@@ -809,7 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const authResp = await fetch('/api/session/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customer_name: customerName })
+          body: JSON.stringify({ token_number: customerToken })
         });
         if (!authResp.ok) throw new Error('Re-authentication failed');
         response = await fetch('/api/customer/gallery');
@@ -863,7 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
       img.src = imgUrl + '?t=' + Date.now();
       img.alt = 'Collage';
       img.className = 'gallery-collage-preview';
-      const openPreview = () => openLightbox(img.src);
+      const openPreview = () => openLightbox(img.src, session);
       card.addEventListener('click', openPreview);
       card.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -961,7 +999,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // retains keyboard focus.
       if (e.key === 'Enter') {
         e.preventDefault();
-        btnSaveCustomization.click();
+        if (document.activeElement === btnTakeMore) {
+          btnTakeMore.click();
+        } else if (document.activeElement === btnGotoGallery) {
+          btnGotoGallery.click();
+        } else if (!btnSaveCustomization.disabled) {
+          btnSaveCustomization.click();
+        }
       } else if (e.key === 'g' || e.key === 'G') {
         e.preventDefault();
         btnGotoGallery.click();
@@ -1096,8 +1140,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // Lightbox & Audio Helpers
   // =========================================================================
-  function openLightbox(url) {
+  function openLightbox(url, gallerySession = null) {
     currentLightboxImgUrl = url;
+    currentLightboxSession = gallerySession;
     if (lightboxImg) lightboxImg.src = url;
     if (lightboxModal) lightboxModal.classList.remove('hidden');
   }
@@ -1114,6 +1159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lightboxModal) lightboxModal.classList.add('hidden');
     if (lightboxImg) lightboxImg.src = '';
     currentLightboxImgUrl = null;
+    currentLightboxSession = null;
   }
 
   if (btnLightboxClose) btnLightboxClose.addEventListener('click', closeLightbox);
@@ -1135,14 +1181,15 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           ts = ts.split('.')[0];
           
-          currentGallerySessionTimestamp = ts;
-          currentSessionDir = customerName;
+          currentGallerySessionTimestamp = currentLightboxSession?.timestamp || ts;
+          currentSessionDir = currentLightboxSession?.folder || customerName;
           isEditingGallerySession = true;
           
           closeLightbox();
           
           // Reset UI
           selectedFrameColor = '#ffffff';
+          savedFrameColor = '#ffffff';
           colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
           
           showScreen(screenReview);
@@ -1150,6 +1197,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Clear old preview until new one loads
           imgCollagePreview.src = '';
           updateFramePreviewFull();
+          updateSaveCustomizationState();
       } else {
           alert('You can only edit collages, not individual photos or animations.');
       }

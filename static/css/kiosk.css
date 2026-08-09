@@ -573,6 +573,15 @@ button.btn-go:focus .key-badge {
   justify-content: space-between;
 }
 
+/* Make the path back to the camera obvious on the preview screen. */
+.review-actions-compact .btn-retake {
+  min-height: 3.5rem;
+  font-size: 1.08rem;
+  font-weight: 800;
+  border-color: var(--accent-coral);
+  box-shadow: 0 5px 14px rgba(190, 24, 93, 0.14);
+}
+
 .btn-back {
   background: transparent;
   color: var(--text-secondary);
@@ -1695,4 +1704,24 @@ button.btn-go:focus .key-badge {
   background: var(--accent-blush);
   border-color: var(--accent-coral);
   color: var(--accent-coral);
+}
+
+/* Added for prominent retake button */
+.btn-retake-prominent {
+  background: #ffecb3;
+  color: #ff8f00;
+  border: 2px solid #ffe082;
+  border-radius: var(--radius-full);
+  padding: 1.25rem 2rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 0.5rem;
+}
+.btn-retake-prominent:hover {
+  background: #ffe082;
+  transform: translateY(-2px);
 }
