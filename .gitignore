@@ -12,4 +12,3 @@ build
 dist
 .ngrok.exe
 test_copy
-..
