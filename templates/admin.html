@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photobooth Admin Panel</title>
   <link rel="icon" type="image/png" href="/static/logo.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=14">
+  <link rel="stylesheet" href="/static/css/style.css?v=15">
 </head>
 <body>
   <!-- Persistent corner logo watermark -->
@@ -39,7 +39,7 @@
     <div id="view-tokens" class="view-container">
       <div class="admin-header-bar">
         <div style="display:flex;align-items:center;gap:1rem;"><button id="btn-back-from-tokens" class="back-btn">Back</button><h2>Customer Tokens & Reports</h2></div>
-        <div style="display:flex;gap:.65rem;align-items:center;"><button id="btn-refresh-tokens" class="back-btn">Refresh</button><button id="btn-export-tokens" class="back-btn">Export Excel</button><label class="back-btn" style="cursor:pointer;">Import Excel/CSV<input id="token-import-file" type="file" accept=".xlsx,.csv" hidden></label></div>
+        <div style="display:flex;gap:.65rem;align-items:center;"><button id="btn-refresh-tokens" class="back-btn">Refresh</button><button id="btn-export-tokens" class="back-btn">Export Excel</button><label class="back-btn" style="cursor:pointer;">Import Excel/CSV<input id="token-import-file" type="file" accept=".xlsx,.csv" hidden></label><button id="btn-delete-all-tokens" class="back-btn" style="color: #ef4444; border-color: #ef4444;">Delete All</button></div>
       </div>
       <div class="token-dashboard" id="token-dashboard"></div>
       <form id="token-form" class="token-form">

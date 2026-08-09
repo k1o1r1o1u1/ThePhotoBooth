@@ -1029,4 +1029,115 @@ h1 {
 .original-photo-actions { display:flex; gap:.45rem; width:100%; }
 .original-photo-btn { flex:1; border:1px solid var(--border); background:var(--bg-primary); color:var(--accent-green); border-radius:7px; padding:.48rem .55rem; cursor:pointer; font:inherit; font-size:.78rem; font-weight:700; text-align:center; text-decoration:none; }
 .original-photo-btn:hover { background:var(--accent-green); border-color:var(--accent-green); color:#fff; }
-@media (max-width: 900px) { .token-form { grid-template-columns:1fr 1fr; } }
+@media (max-width: 900px) {
+  /* --- Tokens panel header --- */
+  #view-tokens .admin-header-bar {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.75rem;
+  }
+  #view-tokens .admin-header-bar > div {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  #view-tokens .admin-header-bar h2 {
+    font-size: 1.35rem;
+  }
+  #view-tokens .admin-header-bar .back-btn {
+    font-size: 0.82rem;
+    padding: 0.5rem 0.9rem;
+  }
+
+  /* --- Dashboard stats: 2 columns instead of 8 --- */
+  .token-dashboard {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem;
+  }
+  .token-stat {
+    padding: 0.75rem;
+  }
+  .token-stat span {
+    font-size: 0.78rem;
+  }
+  .token-stat strong {
+    font-size: 1.2rem;
+  }
+
+  /* --- Token form: stack vertically --- */
+  .token-form {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.55rem;
+  }
+  .token-form .btn-primary {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  /* --- Search input: full width --- */
+  #view-tokens .customer-search-input {
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  /* --- Token table: card layout on mobile --- */
+  .token-table-wrap {
+    border: none;
+    background: transparent;
+    overflow: visible;
+  }
+  .token-table {
+    min-width: 0 !important;
+  }
+  .token-table thead {
+    display: none;
+  }
+  .token-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .token-table tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: var(--shadow-soft);
+  }
+  .token-table td {
+    border-bottom: none !important;
+    padding: 0.25rem 0;
+    font-size: 0.88rem;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Label each cell with its header text */
+  .token-table td::before {
+    content: attr(data-label);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent-green);
+    margin-bottom: 0.15rem;
+  }
+  /* Action column spans full width */
+  .token-table td:last-child {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    padding-top: 0.65rem;
+    margin-top: 0.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Even smaller screens: single column form */
+  .token-form {
+    grid-template-columns: 1fr !important;
+  }
+  .token-dashboard {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}

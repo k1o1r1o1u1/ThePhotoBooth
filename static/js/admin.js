@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnBackFromTokens = document.getElementById('btn-back-from-tokens');
   const btnRefreshTokens = document.getElementById('btn-refresh-tokens');
   const btnExportTokens = document.getElementById('btn-export-tokens');
+  const btnDeleteAllTokens = document.getElementById('btn-delete-all-tokens');
   const tokenImportFile = document.getElementById('token-import-file');
   const tokenForm = document.getElementById('token-form');
   const tokenDashboard = document.getElementById('token-dashboard');
@@ -146,13 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const rows = tokenRows.filter(token => [token.token_number, token.customer_name, token.contact_number, token.email]
       .some(value => String(value || '').toLowerCase().includes(query)));
     tokenTableBody.innerHTML = rows.map(token => `<tr>
-      <td>${escapeHtml(token.token_number)}${token.is_test ? ' <small>(test)</small>' : ''}</td>
-      <td>${escapeHtml(token.customer_name)}</td><td>${escapeHtml(token.contact_number)}</td><td>${escapeHtml(token.email)}</td><td>${Number(token.people_count || 1)}</td>
-      <td>₹${Number(token.amount || 0).toFixed(2)}</td><td>${escapeHtml(token.payment_mode)}</td>
-      <td><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="booth_used" ${token.booth_used ? 'checked' : ''}> ${token.booth_used ? 'Used' : 'Pending'}</label></td>
-      <td><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="printing_done" ${token.printing_done ? 'checked' : ''}> ${token.printing_done ? 'Done' : 'Pending'}</label></td>
-      <td><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="photo_given" ${token.photo_given ? 'checked' : ''}> ${token.photo_given ? 'Given' : 'Pending'}</label></td>
-      <td><div class="token-actions">
+      <td data-label="Token">${escapeHtml(token.token_number)}${token.is_test ? ' <small>(test)</small>' : ''}</td>
+      <td data-label="Name">${escapeHtml(token.customer_name)}</td><td data-label="Contact">${escapeHtml(token.contact_number)}</td><td data-label="Email">${escapeHtml(token.email)}</td><td data-label="People">${Number(token.people_count || 1)}</td>
+      <td data-label="Amount">₹${Number(token.amount || 0).toFixed(2)}</td><td data-label="Payment">${escapeHtml(token.payment_mode)}</td>
+      <td data-label="Booth used"><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="booth_used" ${token.booth_used ? 'checked' : ''}> ${token.booth_used ? 'Used' : 'Pending'}</label></td>
+      <td data-label="Printing done"><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="printing_done" ${token.printing_done ? 'checked' : ''}> ${token.printing_done ? 'Done' : 'Pending'}</label></td>
+      <td data-label="Print given"><label class="token-check"><input type="checkbox" data-token="${escapeHtml(token.token_number)}" data-field="photo_given" ${token.photo_given ? 'checked' : ''}> ${token.photo_given ? 'Given' : 'Pending'}</label></td>
+      <td data-label="Action"><div class="token-actions">
         <button class="token-edit-btn" data-edit-token="${escapeHtml(token.token_number)}">Edit</button>
         ${token.contact_number ? `<button class="token-whatsapp-btn" data-whatsapp-token="${escapeHtml(token.token_number)}">WhatsApp</button>` : ''}
         ${token.email ? `<button class="token-email-btn" data-email-token="${escapeHtml(token.token_number)}">Email</button>` : ''}
@@ -269,13 +270,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const button = event.target.closest('[data-delete-token]');
     if (!button) return;
     const tokenNumber = button.dataset.deleteToken;
-    if (!confirm(`Delete customer token ${tokenNumber}? Their saved photo files will be kept.`)) return;
+    if (!confirm(`Delete customer token ${tokenNumber}? Their folder will be archived.`)) return;
     const response = await fetch(`/api/admin/tokens/${encodeURIComponent(tokenNumber)}`, { method: 'DELETE' });
     const data = await response.json();
     if (!response.ok) return alert(data.error || 'Could not delete customer');
     await fetchTokens();
     await prepareNextTokenNumber();
   });
+
+  if (btnDeleteAllTokens) {
+    btnDeleteAllTokens.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to delete ALL customer tokens? Their folders will be archived.')) return;
+      const response = await fetch('/api/admin/tokens', { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) return alert(data.error || 'Could not delete all tokens');
+      alert(`Deleted and archived ${data.deleted} tokens.`);
+      await fetchTokens();
+      await prepareNextTokenNumber();
+    });
+  }
 
   btnBackToCustomers.addEventListener('click', () => {
     switchView(viewCustomers);
@@ -355,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'customer-card';
       card.innerHTML = `
-        <div class="customer-card-title">${cust.customer_name}</div>
+        <div class="customer-card-title">Token ${cust.folder}</div>
         <div class="customer-card-meta">
           📸 ${photoCount} Session${photoCount !== 1 ? 's' : ''}<br>
           🕒 Last: ${timeStr}
@@ -363,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       card.addEventListener('click', () => {
         activeCustomer = cust;
-        galleryCustomerName.textContent = cust.customer_name;
+        galleryCustomerName.textContent = `Token ${cust.folder}`;
         renderGallery(cust);
         switchView(viewGallery);
       });
@@ -630,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // isEdited: if true, we're editing an already-edited image (no layered rebuild)
   function openEditor(session, customerData, editImgUrl, isEdited) {
     selectedSession = session;
-    editorCustomerName.textContent = customerData.customer_name;
+    editorCustomerName.textContent = `Token ${customerData.folder}`;
     activeSessionTime.textContent = session.time;
     
     // Switch View

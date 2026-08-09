@@ -295,10 +295,62 @@ def delete_token(token_number):
     if token_number == '0':
         return jsonify({'error': 'The permanent test token cannot be deleted'}), 400
     with get_token_db() as connection:
-        result = connection.execute('DELETE FROM tokens WHERE token_number = ?', (token_number,))
-        if not result.rowcount:
+        token = connection.execute('SELECT * FROM tokens WHERE token_number = ?', (token_number,)).fetchone()
+        if not token:
             return jsonify({'error': 'Customer token not found'}), 404
+            
+        token_dict = dict(token)
+        session_dir = sanitize_filename(token_number)
+        folder_path = os.path.join(PHOTOS_DIR, session_dir)
+        if os.path.exists(folder_path) and os.path.isdir(folder_path):
+            archive_dir = os.path.join(PHOTOS_DIR, 'archived')
+            os.makedirs(archive_dir, exist_ok=True)
+            cust_name = sanitize_filename(token_dict.get('customer_name', 'Unknown'))
+            created_at = token_dict.get('created_at', '')
+            date_str = created_at.split('T')[0] if 'T' in created_at else created_at.split(' ')[0]
+            if not date_str:
+                date_str = datetime.now().strftime('%Y-%m-%d')
+            archive_name = f"{cust_name}_{token_number}_{date_str}"
+            archive_path = os.path.join(archive_dir, archive_name)
+            if os.path.exists(archive_path):
+                archive_path = f"{archive_path}_{int(time.time())}"
+            import shutil
+            shutil.move(folder_path, archive_path)
+
+        connection.execute('DELETE FROM tokens WHERE token_number = ?', (token_number,))
     return jsonify({'status': 'success'})
+
+@app.route('/api/admin/tokens', methods=['DELETE'])
+def delete_all_tokens():
+    with get_token_db() as connection:
+        tokens = connection.execute('SELECT * FROM tokens WHERE token_number != "0"').fetchall()
+        import shutil
+        archive_dir = os.path.join(PHOTOS_DIR, 'archived')
+        os.makedirs(archive_dir, exist_ok=True)
+        
+        for token in tokens:
+            token_dict = dict(token)
+            token_number = token_dict['token_number']
+            session_dir = sanitize_filename(token_number)
+            folder_path = os.path.join(PHOTOS_DIR, session_dir)
+            if os.path.exists(folder_path) and os.path.isdir(folder_path):
+                cust_name = sanitize_filename(token_dict.get('customer_name', 'Unknown'))
+                created_at = token_dict.get('created_at', '')
+                date_str = created_at.split('T')[0] if 'T' in created_at else created_at.split(' ')[0]
+                if not date_str:
+                    date_str = datetime.now().strftime('%Y-%m-%d')
+                archive_name = f"{cust_name}_{token_number}_{date_str}"
+                archive_path = os.path.join(archive_dir, archive_name)
+                if os.path.exists(archive_path):
+                    archive_path = f"{archive_path}_{int(time.time())}"
+                try:
+                    shutil.move(folder_path, archive_path)
+                except Exception as e:
+                    print(f"Error archiving {folder_path}: {e}")
+                    
+        connection.execute('DELETE FROM tokens WHERE token_number != "0"')
+        
+    return jsonify({'status': 'success', 'deleted': len(tokens)})
 
 
 @app.route('/api/admin/tokens/<token_number>/status', methods=['POST'])
