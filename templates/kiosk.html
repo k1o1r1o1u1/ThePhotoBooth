@@ -156,12 +156,21 @@
           <div class="review-logo-wrap">
             <img src="/static/logo.png" alt="Logo" class="review-logo-img" />
           </div>
-          <h1
-            class="welcome-title"
-            style="font-size: clamp(1.4rem, 2.5vw, 2rem)"
-          >
-            Customize Your Photostrip!
-          </h1>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; width: 100%;">
+            <h1
+              class="welcome-title"
+              style="font-size: clamp(1.4rem, 2.5vw, 2rem); margin-bottom: 0;"
+            >
+              Customize Your Photostrip!
+            </h1>
+            <button
+              id="btn-save-customization"
+              class="btn-save-custom"
+              tabindex="0"
+            >
+              Save
+            </button>
+          </div>
 
           <!-- Studio Customization Controls -->
           <div class="studio-controls">
@@ -286,13 +295,7 @@
 
             <div style="width: 100%; border-top: 2px solid rgba(0,0,0,0.08); margin: 0.3rem 0;"></div>
 
-            <button
-              id="btn-save-customization"
-              class="big-btn btn-go"
-              tabindex="0"
-            >
-              Save Custom Photostrip ✨ <kbd class="key-badge">Enter ↵</kbd>
-            </button>
+
             <button
               id="btn-goto-gallery"
               class="small-btn btn-secondary"

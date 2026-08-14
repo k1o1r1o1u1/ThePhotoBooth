@@ -1321,8 +1321,14 @@ button.btn-go:focus .key-badge {
 }
 
 /* hide native scrollbar (still scrollable) */
-.gallery-sessions::-webkit-scrollbar { display: none; }
-.gallery-sessions { -ms-overflow-style: none; scrollbar-width: none; }
+.gallery-sessions::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-sessions {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 .gallery-card {
   background: var(--surface);
@@ -1667,7 +1673,8 @@ button.btn-go:focus .key-badge {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.color-dot.active, .color-dot:hover {
+.color-dot.active,
+.color-dot:hover {
   transform: scale(1.2);
   box-shadow: 0 0 0 2px var(--accent-coral);
 }
@@ -1708,12 +1715,12 @@ button.btn-go:focus .key-badge {
 
 /* Added for prominent retake button */
 .btn-retake-prominent {
-  background: #ffecb3;
-  color: #ff8f00;
-  border: 2px solid #ffe082;
+  background: var(--accent-coral);
+  color: #fff;
+  border: 2px solid var(--accent-coral);
   border-radius: var(--radius-full);
-  padding: 1.25rem 2rem;
-  font-size: 1.25rem;
+  padding: 1.5rem 2.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   font-family: var(--font-display);
   cursor: pointer;
@@ -1721,7 +1728,38 @@ button.btn-go:focus .key-badge {
   box-shadow: var(--shadow-soft);
   margin-bottom: 0.5rem;
 }
+
 .btn-retake-prominent:hover {
-  background: #ffe082;
+  background: #8f1d4e;
+  border-color: #8f1d4e;
   transform: translateY(-2px);
+}
+
+.btn-save-custom {
+  background: var(--accent-coral);
+  color: #fff;
+  border: 2px solid var(--accent-coral);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-save-custom:hover:not(:disabled) {
+  background: #8f1d4e;
+  border-color: #8f1d4e;
+}
+
+.btn-save-custom:disabled {
+  background: #fff;
+  color: var(--accent-coral);
+  cursor: default;
+  border-color: var(--accent-coral);
 }

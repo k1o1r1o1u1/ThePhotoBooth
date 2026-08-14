@@ -681,8 +681,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasUnsavedFrameChange = selectedFrameColor !== savedFrameColor;
     btnSaveCustomization.disabled = !hasUnsavedFrameChange;
     btnSaveCustomization.innerHTML = hasUnsavedFrameChange
-      ? 'Save This Frame Color &#10024; <kbd class="key-badge">Enter &#8629;</kbd>'
-      : 'Saved &#10003;';
+      ? 'Save'
+      : 'Saved ✓';
   }
 
   // Color dots click events (Review Screen)
@@ -750,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await response.json();
         if (result.error) throw new Error(result.error);
         imgCollagePreview.src = result.collage_url + '?t=' + Date.now();
-        btnSaveCustomization.textContent = 'Saved! ✨';
+        btnSaveCustomization.textContent = 'Saved!';
         
         // Keep the original session selected. A customer may save more than
         // one frame colour during the same review without re-uploading photos.
@@ -1281,3 +1281,4 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) { }
   }
 });
+document.addEventListener('contextmenu', event => event.preventDefault());

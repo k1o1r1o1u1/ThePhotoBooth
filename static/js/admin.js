@@ -1155,3 +1155,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initial Data Fetch
   fetchSessions();
 });
+document.addEventListener('contextmenu', event => event.preventDefault());
