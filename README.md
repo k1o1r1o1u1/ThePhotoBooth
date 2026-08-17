@@ -154,3 +154,28 @@ app.run(host='0.0.0.0', port=5000, debug=True)
 - The web app is the main interface for this project.
 - photobooth.py is a standalone script and is not required for the Flask app to run.
 - The app stores files locally by default; it does not require a database.
+
+## Building Executables
+
+You can build a standalone executable that doesn't require Python to be installed. The project includes a `ThePhotoBooth.spec` file configured to package the app along with its `templates` and `static` directories.
+
+First, ensure you have PyInstaller installed:
+```bash
+pip install pyinstaller
+```
+
+### Build on Windows (.exe)
+Run the following command in the project directory:
+```powershell
+pyinstaller ThePhotoBooth.spec
+```
+The standalone `.exe` will be generated in the `dist` folder as `dist\ThePhotoBooth.exe`.
+
+### Build on Ubuntu / Linux
+To create an executable for your Ubuntu server, you must run the build command **on the Ubuntu machine** (PyInstaller does not support cross-compiling from Windows to Linux).
+
+Run the following command on your Ubuntu server:
+```bash
+pyinstaller ThePhotoBooth.spec
+```
+The Linux executable will be generated in the `dist` folder as `dist/ThePhotoBooth`.

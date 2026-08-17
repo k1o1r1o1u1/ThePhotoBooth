@@ -465,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Reset texts
     if (captureStatus) captureStatus.textContent = 'Get Ready!';
-    if (captureInstruction) captureInstruction.textContent = 'Press the button or Space to start!';
+    if (captureInstruction) captureInstruction.textContent = 'Press the button or Space or to start!';
 
     // Clear thumbnails
     if (thumbsBar) thumbsBar.innerHTML = '';
