@@ -61,6 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let webcamStream = null;
   let webcamStreamRequestId = 0;
   let capturedImages = [];
+  let captureUploadTasks = [];
+  let uploadedCaptureFiles = [];
+  let currentCaptureTimestamp = '';
   let idleTimer = null;
   let currentScreen = null;
   let isCapturing = false;
@@ -518,6 +521,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const requestId = ++webcamStreamRequestId;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
+          // Prefer the front/selfie camera on phones and tablets. This remains
+          // an ideal constraint so external desktop cameras such as GoPro
+          // Webcam continue to work when they do not report a facing mode.
+          facingMode: { ideal: 'user' },
           // Prefer the highest profile exposed by an external camera (such as
           // GoPro Webcam). "ideal" gracefully falls back to the highest
           // profile the camera offers when 4K is unavailable.
@@ -637,6 +644,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     isCapturing = true;
     burstAborted = false;
+    currentCaptureTimestamp = String(Math.floor(Date.now() / 1000));
+    captureUploadTasks = [];
+    uploadedCaptureFiles = [];
 
     // Disable the manual trigger — it's all automatic now
     btnCapture.classList.add('disabled');
@@ -654,9 +664,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (burstAborted) break;
 
       triggerFlash();
-      const base64Img = captureSnapshot();
-      capturedImages.push(base64Img);
-      fillSlot(i, base64Img);
+      const imageBlob = await captureSnapshot();
+      if (!imageBlob) throw new Error('Unable to encode camera photo');
+      const previewUrl = URL.createObjectURL(imageBlob);
+      capturedImages.push({ blob: imageBlob, previewUrl });
+      fillSlot(i, previewUrl);
+      // Start transferring immediately while the next countdown runs. This
+      // hides most ngrok upload time without changing image resolution.
+      captureUploadTasks.push(uploadCapturedImage(imageBlob, i + 1));
 
       captureStatus.textContent = `✓ Photo ${i + 1} captured!`;
 
@@ -686,9 +701,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activeSlot) activeSlot.classList.add('active');
   }
 
-  function fillSlot(idx, base64Img) {
+  function fillSlot(idx, previewUrl) {
     const slot = document.getElementById(`thumb-slot-${idx}`);
-    if (slot) slot.style.backgroundImage = `url(${base64Img})`;
+    if (slot) slot.style.backgroundImage = `url(${previewUrl})`;
+  }
+
+  async function uploadCapturedImage(imageBlob, captureIndex) {
+    const uploadData = new FormData();
+    uploadData.append('session_dir', currentSessionDir);
+    uploadData.append('session_timestamp', currentCaptureTimestamp);
+    uploadData.append('capture_index', String(captureIndex));
+    uploadData.append('images', imageBlob, `capture-${captureIndex}.jpg`);
+    const response = await fetch('/api/session/upload', { method: 'POST', body: uploadData });
+    const result = await response.json();
+    if (!response.ok || result.error) throw new Error(result.error || 'Photo upload failed');
+    uploadedCaptureFiles[captureIndex - 1] = result.files[0];
+    return result;
   }
 
   // =========================================================================
@@ -723,6 +751,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Interactive Layered Rendering State
   let kioskPhotoImages = [];
+  let kioskPreviewTimer = null;
+
+  // Frame and sticker edits may arrive rapidly (especially from touch input).
+  // Coalesce them into one canvas draw rather than redrawing for every event.
+  function scheduleKioskPreviewDraw() {
+    if (kioskPreviewTimer) clearTimeout(kioskPreviewTimer);
+    kioskPreviewTimer = setTimeout(() => {
+      kioskPreviewTimer = null;
+      drawKioskCanvas();
+    }, 80);
+  }
 
   // Kawaii Stickers Catalog (33 transparent stickers)
   const DEFAULT_KAWAII_STICKERS = [
@@ -1169,7 +1208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const validImages = loaded.filter(Boolean);
     if (validImages.length > 0) {
       kioskPhotoImages = validImages;
-      drawKioskCanvas();
+      scheduleKioskPreviewDraw();
     }
   }
 
@@ -1178,7 +1217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (kioskPhotoImages && kioskPhotoImages.length > 0) return;
 
     if (capturedImages && capturedImages.length > 0) {
-      await loadKioskPhotosFromUrls(capturedImages);
+      await loadKioskPhotosFromUrls(capturedImages.map(image => image.previewUrl || image));
       return;
     }
 
@@ -1222,7 +1261,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateFrameColorBadge(selectedFrameColor, dot.dataset.name || dot.title);
       hasUnsavedCustomization = true;
       updateSaveCustomizationState();
-      drawKioskCanvas();
+      scheduleKioskPreviewDraw();
     });
   });
 
@@ -1233,7 +1272,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateFrameColorBadge(selectedFrameColor, 'Custom Color');
       hasUnsavedCustomization = true;
       updateSaveCustomizationState();
-      drawKioskCanvas();
+      scheduleKioskPreviewDraw();
     });
   }
 
@@ -1246,7 +1285,7 @@ document.addEventListener('DOMContentLoaded', () => {
       selectedPhotoBorderStyle = btn.dataset.border || 'none';
       hasUnsavedCustomization = true;
       updateSaveCustomizationState();
-      drawKioskCanvas();
+      scheduleKioskPreviewDraw();
     });
   });
 
@@ -1259,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', () => {
       selectedPhotoRadius = Number(btn.dataset.radius) || 0;
       hasUnsavedCustomization = true;
       updateSaveCustomizationState();
-      drawKioskCanvas();
+      scheduleKioskPreviewDraw();
     });
   });
 
@@ -1365,7 +1404,7 @@ document.addEventListener('DOMContentLoaded', () => {
       hasUnsavedCustomization = true;
       updateKioskStickerControlsUI();
       updateSaveCustomizationState();
-      drawKioskCanvas();
+      scheduleKioskPreviewDraw();
     };
     img.src = item.url || `/static/stickers/kawaii/${item.file}`;
   }
@@ -2188,18 +2227,20 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // 1. Export clean photostrip JPEG without interactive selection handles
       drawKioskCanvas(true);
-      const editedDataUrl = kioskCollageCanvas.toDataURL('image/jpeg', 0.95);
+      const editedImage = await new Promise(resolve =>
+        kioskCollageCanvas.toBlob(resolve, 'image/jpeg', 0.95)
+      );
       drawKioskCanvas(false);
+      if (!editedImage) throw new Error('Unable to prepare the photostrip for saving');
 
-      // 2. Persist to session folder
+      // 2. Persist the JPEG as binary multipart data (no Base64 overhead).
+      const saveData = new FormData();
+      saveData.append('session_dir', currentSessionDir);
+      saveData.append('timestamp', currentGallerySessionTimestamp || '');
+      saveData.append('image', editedImage, 'photostrip.jpg');
       const response = await fetch('/api/customer/save_edit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_dir: currentSessionDir,
-          timestamp: currentGallerySessionTimestamp,
-          image: editedDataUrl
-        })
+        body: saveData
       });
 
       const result = await response.json();
@@ -2237,21 +2278,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   async function finishCapture() {
     captureStatus.textContent = 'Processing...';
-    captureInstruction.textContent = 'Building your photostrip, please wait!';
+    captureInstruction.textContent = 'Saving your photos, please wait!';
 
     try {
-      const response = await fetch('/api/session/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_dir: currentSessionDir,
-          images: capturedImages,
-          frame_color: selectedFrameColor
-        })
-      });
-
-      const result = await response.json();
-      if (result.error) throw new Error(result.error);
+      // All transfers started during the countdowns. Only wait for any final
+      // in-flight upload instead of starting a new four-photo transfer now.
+      await Promise.all(captureUploadTasks);
+      const result = {
+        files: uploadedCaptureFiles.filter(Boolean),
+        session_timestamp: currentCaptureTimestamp
+      };
 
       // Reset studio customizations for fresh review
       selectedFrameColor = '#ffffff';
@@ -2265,7 +2301,9 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('#kiosk-photo-corner-options .frame-corner-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.radius === '8');
       });
-      hasUnsavedCustomization = false;
+      // There is intentionally no expensive final collage yet. The canvas is
+      // the instant local preview; clicking Save produces the 600-DPI strip.
+      hasUnsavedCustomization = true;
       kioskCustomStickers = [];
       kioskSelectedSticker = null;
       kioskTextOverlay = '';
@@ -2277,17 +2315,18 @@ document.addEventListener('DOMContentLoaded', () => {
         d.classList.toggle('active', d.dataset.color === '#ffffff');
       });
 
-      if (imgCollagePreview) {
-        imgCollagePreview.src = result.collage_url + '?t=' + Date.now();
-      }
-
       currentGallerySessionTimestamp = result.session_timestamp;
       isEditingGallerySession = true;
 
       // Load high-res photos directly into interactive canvas
-      const photoUrls = (result.files && result.files.length > 0) ? result.files : capturedImages;
+      const photoUrls = (result.files && result.files.length > 0)
+        ? result.files
+        : capturedImages.map(image => image.previewUrl || image);
       await loadKioskPhotosFromUrls(photoUrls);
 
+      capturedImages.forEach(image => {
+        if (image.previewUrl) URL.revokeObjectURL(image.previewUrl);
+      });
       capturedImages = [];
       updateSaveCustomizationState();
 
@@ -2590,7 +2629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 400);
   }
 
-  function captureSnapshot() {
+  async function captureSnapshot() {
     const canvas = document.createElement('canvas');
     const sourceWidth = videoWebcam.videoWidth || 1280;
     const sourceHeight = videoWebcam.videoHeight || 960;
@@ -2606,8 +2645,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const cropX = Math.round((sourceWidth - cropWidth) / 2);
     const cropY = Math.round((sourceHeight - cropHeight) / 2);
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
+    // The finished strip uses 1022px-wide photo slots. 1920px gives ample
+    // headroom for the 600-DPI output without pushing full 4K frames through
+    // a mobile connection or an ngrok tunnel.
+    const maxUploadWidth = 1920;
+    const outputWidth = Math.min(cropWidth, maxUploadWidth);
+    const outputHeight = Math.round(outputWidth / collageImageRatio);
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
     const ctx = canvas.getContext('2d');
 
     ctx.translate(canvas.width, 0);
@@ -2617,7 +2662,7 @@ document.addEventListener('DOMContentLoaded', () => {
       cropX, cropY, cropWidth, cropHeight,
       0, 0, canvas.width, canvas.height
     );
-    return canvas.toDataURL('image/jpeg', 1.0);
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
   }
 
   // =========================================================================

@@ -539,84 +539,46 @@ def start_session():
 # ---------------------------------------------------------------------------
 @app.route('/api/session/upload', methods=['POST'])
 def upload_photos():
-    data = request.json or {}
+    data = request.form if request.files else (request.json or {})
     # Prefer the session‑stored directory if not explicitly supplied
     session_dir = data.get('session_dir') or session.get('session_dir')
+    uploaded_images = request.files.getlist('images')
     image_data_list = data.get('images', [])
     image_filter = data.get('image_filter', 'normal')
-    if not session_dir or not image_data_list:
+    if not session_dir or (not uploaded_images and not image_data_list):
         return jsonify({'error': 'Missing session_dir or images'}), 400
     session_path = os.path.join(PHOTOS_DIR, session_dir)
     if not os.path.exists(session_path):
         return jsonify({'error': 'Session directory not found'}), 404
     saved_files = []
-    pil_images = []
-    session_timestamp = str(int(time.time()))
-    for idx, img_base64 in enumerate(image_data_list):
+    requested_timestamp = str(data.get('session_timestamp', '')).strip()
+    session_timestamp = requested_timestamp if requested_timestamp.isdigit() else str(int(time.time()))
+    try:
+        capture_offset = max(1, int(data.get('capture_index', 1)))
+    except (TypeError, ValueError):
+        capture_offset = 1
+    image_sources = uploaded_images or image_data_list
+    for idx, image_source in enumerate(image_sources):
         try:
-            if ',' in img_base64:
-                img_base64 = img_base64.split(',')[1]
-            img_bytes = base64.b64decode(img_base64)
-            img = Image.open(BytesIO(img_bytes)).convert('RGB')
-            # Apply an Unsharp Mask to significantly increase photo sharpness
-            img = img.filter(ImageFilter.UnsharpMask(radius=1.5, percent=100, threshold=3))
-            
-            # Save individual photo – timestamp ensures uniqueness within user folder
-            filename = f"capture_{session_timestamp}_{idx + 1}.jpg"
+            # The kiosk has already cropped, filtered, and JPEG-encoded this
+            # image in the browser. Stream multipart files straight to disk:
+            # decoding and re-encoding four images here added avoidable delay,
+            # particularly when the request arrived through ngrok.
+            filename = f"capture_{session_timestamp}_{capture_offset + idx}.jpg"
             filepath = os.path.join(session_path, filename)
-            img.save(filepath, 'JPEG', quality=100, subsampling=0)
+            if uploaded_images:
+                image_source.save(filepath)
+            else:
+                img_base64 = image_source.split(',', 1)[-1]
+                img_bytes = base64.b64decode(img_base64)
+                img = Image.open(BytesIO(img_bytes)).convert('RGB')
+                img.save(filepath, 'JPEG', quality=95, subsampling=0)
             saved_files.append(f"/static/photos/{session_dir}/{filename}")
-            pil_images.append(img)
         except Exception as e:
             return jsonify({'error': f"Failed to process image {idx + 1}: {str(e)}"}), 500
-    # Build vertical collage
-    collage_url = None
-    if pil_images:
-        try:
-            # Dimensions for 600 DPI (doubled from 300 DPI for higher resolution)
-            # 50mm x 157mm frame with a subtle footer below the last photo.
-            frame_w, frame_h = FRAME_WIDTH, FRAME_HEIGHT
-            # 43.3mm x 31.8mm photo
-            photo_w, photo_h = 1022, 752
-            # 300 DPI alternative:
-            # frame_w, frame_h = 591, 1772
-            # photo_w, photo_h = 511, 376
-            
-            # Margins
-            left_margin = (frame_w - photo_w) // 2
-            top_margin = left_margin
-            gutter = 80
-            
-            frame_color_hex = data.get('frame_color', '#ffffff')
-            try:
-                bg_color = tuple(int(frame_color_hex.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-            except Exception:
-                bg_color = (255, 255, 255)
-            
-            collage = Image.new('RGB', (frame_w, frame_h), bg_color)
-            current_y = top_margin
-            
-            for img in pil_images:
-                # Crop/resize photo to exact dimensions
-                scaled_img = ImageOps.fit(apply_photo_filter(img, image_filter), (photo_w, photo_h), Image.Resampling.LANCZOS)
-                collage.paste(scaled_img, (left_margin, current_y))
-                current_y += photo_h + gutter
-            
-            # Apply sticker pack if selected
-            sticker_pack = data.get('sticker_pack', 'none')
-            if sticker_pack and sticker_pack != 'none':
-                draw_sticker_pack(collage, sticker_pack)
-                
-            collage_filename = f"collage_{session_timestamp}.jpg"
-            collage_filepath = os.path.join(session_path, collage_filename)
-            collage.save(collage_filepath, 'JPEG', quality=100, subsampling=0)
-            collage_url = f"/static/photos/{session_dir}/{collage_filename}"
-        except Exception as e:
-            return jsonify({'error': f"Failed to build collage: {str(e)}"}), 500
     return jsonify({
         'status': 'success',
         'files': saved_files,
-        'collage_url': collage_url,
         'session_timestamp': session_timestamp
     })
 
@@ -700,8 +662,11 @@ def render_preview():
         if sticker_pack and sticker_pack != 'none':
             draw_sticker_pack(collage, sticker_pack)
 
+        # Editing previews are deliberately half-size. The print-quality
+        # 600-DPI strip is created only when the user saves their design.
+        preview = collage.resize((FRAME_WIDTH // 2, FRAME_HEIGHT // 2), Image.Resampling.LANCZOS)
         buffer = BytesIO()
-        collage.save(buffer, 'JPEG', quality=85)
+        preview.save(buffer, 'JPEG', quality=78, optimize=True)
         buffer.seek(0)
         base64_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
         return jsonify({
@@ -1007,19 +972,32 @@ def save_edit():
 # ---------------------------------------------------------------------------
 @app.route('/api/customer/save_edit', methods=['POST'])
 def customer_save_edit():
-    data = request.json or {}
+    data = request.form if request.files else (request.json or {})
     session_dir = session.get('session_dir') or data.get('session_dir')
     timestamp = data.get('timestamp')
+    uploaded_image = request.files.get('image')
     edited_img_base64 = data.get('image')
-    if not session_dir or not edited_img_base64:
+    if not session_dir or (not uploaded_image and not edited_img_base64):
         return jsonify({'error': 'Missing session_dir or image data'}), 400
     session_path = os.path.join(PHOTOS_DIR, session_dir)
     if not os.path.exists(session_path):
         return jsonify({'error': 'Session directory not found'}), 404
     try:
-        if ',' in edited_img_base64:
-            edited_img_base64 = edited_img_base64.split(',')[1]
-        img_bytes = base64.b64decode(edited_img_base64)
+        if uploaded_image:
+            # The browser canvas already exported a finished JPEG at the
+            # target 1182×3700 resolution, so retain it byte-for-byte.
+            import time as time_mod
+            edit_ts = str(int(time_mod.time()))
+            filename = f"collage_edited_{timestamp}_{edit_ts}.jpg" if timestamp else f"collage_edited_{edit_ts}.jpg"
+            filepath = os.path.join(session_path, filename)
+            uploaded_image.save(filepath)
+            return jsonify({
+                'status': 'success',
+                'collage_edited_url': f"/static/photos/{session_dir}/{filename}"
+            })
+        else:
+            edited_img_base64 = edited_img_base64.split(',', 1)[-1]
+            img_bytes = base64.b64decode(edited_img_base64)
         img = Image.open(BytesIO(img_bytes)).convert('RGB')
         import time as time_mod
         edit_ts = str(int(time_mod.time()))
