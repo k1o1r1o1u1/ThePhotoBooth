@@ -275,7 +275,7 @@
             </div>
           </div>
 
-          <div class="review-actions-compact">
+          <div class="review-actions-compact" style="display:flex;flex-direction:column;gap:0.6rem;align-items:center;width:100%;max-width:520px;margin:0.5rem auto 0;">
             <button
               id="btn-save-customization"
               class="big-btn btn-go"
@@ -283,17 +283,23 @@
             >
               Save Custom Photostrip ✨ <kbd class="key-badge">Enter ↵</kbd>
             </button>
+
+            <!-- Prominent CTA for taking more photos (made larger, clearer wording) -->
             <button
               id="btn-take-more"
-              class="small-btn btn-secondary"
+              class="big-btn btn-cta"
               tabindex="0"
+              aria-label="Take new photos"
+              style="width:100%;max-width:420px;background:var(--accent-green);color:#fff;border:none;box-shadow:var(--shadow-soft);padding:0.95rem 2rem;border-radius:var(--radius-full);font-size:1.05rem;"
             >
-              Take More Photos <kbd class="key-badge">Esc</kbd>
+              Take New Photos <kbd class="key-badge">Esc</kbd>
             </button>
+
             <button
               id="btn-goto-gallery"
               class="small-btn btn-secondary"
               tabindex="0"
+              style="width:100%;max-width:420px;justify-content:center;"
             >
               See All Photos <kbd class="key-badge">G</kbd>
             </button>
