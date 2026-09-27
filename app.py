@@ -956,7 +956,7 @@ def save_edit():
         img = Image.open(BytesIO(img_bytes)).convert('RGB')
         # Use current time as unique edit identifier to support multiple edits
         import time as time_mod
-        edit_ts = str(int(time_mod.time()))
+        edit_ts = str(time_mod.time_ns())
         filename = f"collage_edited_{timestamp}_{edit_ts}.jpg" if timestamp else f"collage_edited_{edit_ts}.jpg"
         filepath = os.path.join(session_path, filename)
         img.save(filepath, 'JPEG', quality=95)
@@ -975,6 +975,7 @@ def customer_save_edit():
     data = request.form if request.files else (request.json or {})
     session_dir = session.get('session_dir') or data.get('session_dir')
     timestamp = data.get('timestamp')
+    is_original = data.get('is_original') == 'true'
     uploaded_image = request.files.get('image')
     edited_img_base64 = data.get('image')
     if not session_dir or (not uploaded_image and not edited_img_base64):
@@ -987,8 +988,13 @@ def customer_save_edit():
             # The browser canvas already exported a finished JPEG at the
             # target 1182×3700 resolution, so retain it byte-for-byte.
             import time as time_mod
-            edit_ts = str(int(time_mod.time()))
-            filename = f"collage_edited_{timestamp}_{edit_ts}.jpg" if timestamp else f"collage_edited_{edit_ts}.jpg"
+            edit_ts = str(time_mod.time_ns())
+            
+            if is_original:
+                filename = f"collage_{timestamp}.jpg" if timestamp else f"collage_{edit_ts}.jpg"
+            else:
+                filename = f"collage_edited_{timestamp}_{edit_ts}.jpg" if timestamp else f"collage_edited_{edit_ts}.jpg"
+                
             filepath = os.path.join(session_path, filename)
             uploaded_image.save(filepath)
             return jsonify({
@@ -1000,7 +1006,7 @@ def customer_save_edit():
             img_bytes = base64.b64decode(edited_img_base64)
         img = Image.open(BytesIO(img_bytes)).convert('RGB')
         import time as time_mod
-        edit_ts = str(int(time_mod.time()))
+        edit_ts = str(time_mod.time_ns())
         filename = f"collage_edited_{timestamp}_{edit_ts}.jpg" if timestamp else f"collage_edited_{edit_ts}.jpg"
         filepath = os.path.join(session_path, filename)
         img.save(filepath, 'JPEG', quality=95)

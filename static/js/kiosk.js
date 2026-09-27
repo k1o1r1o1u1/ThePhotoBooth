@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (idleTimer) clearTimeout(idleTimer);
     if (customerName) {
       idleTimer = setTimeout(() => {
-        finishSession('Your session ended after a period of inactivity. Thank you for visiting Chini Champra Creations.');
+        void finishSession('Your session ended after a period of inactivity. Thank you for visiting Chini Champra Creations.');
       }, IDLE_TIMEOUT_MS);
     }
   }
@@ -216,8 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function handleSessionTimerExpired() {
-    await autoSaveKioskCustomization();
-    finishSession(`Your ${sessionDurationMinutes}-minute photo session has ended. Thank you for visiting Chini Champra Creations.`);
+    stopSessionTimer();
+    await finishSession(`Your ${sessionDurationMinutes}-minute photo session has ended. Thank you for visiting Chini Champra Creations.`);
   }
 
   async function tickSessionTimer() {
@@ -400,8 +400,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
   }
 
-  function finishSession(message) {
+  async function finishSession(message) {
     if (currentScreen === screenThankYou) return;
+    if (currentScreen === screenReview) {
+      await autoSaveKioskCustomization({ force: true });
+    }
     stopIdleWatcher();
     stopSessionTimer();
     burstAborted = true;
@@ -417,10 +420,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (thankYouMessage) thankYouMessage.textContent = message;
     showScreen(screenThankYou);
     startThankYouTimer();
-    fetch('/api/customer/logout', { method: 'POST' }).catch(() => {});
+    fetch('/api/customer/logout', { method: 'POST' }).catch(() => { });
   }
 
   async function performLogout() {
+    if (currentScreen === screenReview) {
+      await autoSaveKioskCustomization({ force: true });
+    }
     stopThankYouTimer();
     stopIdleWatcher();
     stopSessionTimer();
@@ -431,13 +437,13 @@ document.addEventListener('DOMContentLoaded', () => {
     stopWebcam();
     inputName.value = '';
     showScreen(screenLogin);
-    fetch('/api/customer/logout', { method: 'POST' }).catch(() => {});
+    fetch('/api/customer/logout', { method: 'POST' }).catch(() => { });
   }
 
   btnLogout.addEventListener('click', performLogout);
   if (btnEndSession) {
-    btnEndSession.addEventListener('click', () => {
-      finishSession('Thank you for creating great memories with Chini Champra Creations. We hope to see you again soon!');
+    btnEndSession.addEventListener('click', async () => {
+      await finishSession('Thank you for creating great memories with Chini Champra Creations. We hope to see you again soon!');
     });
   }
   if (btnReturnWelcome) btnReturnWelcome.addEventListener('click', returnToWelcome);
@@ -455,12 +461,12 @@ document.addEventListener('DOMContentLoaded', () => {
     await startWebcamStream();
   });
   btnGotoGallery.addEventListener('click', async () => {
-    await autoSaveKioskCustomization();
+    await autoSaveKioskCustomization({ force: true });
     loadGallery();
   });
   if (btnCaptureGallery) {
     btnCaptureGallery.addEventListener('click', async () => {
-      await autoSaveKioskCustomization();
+      await autoSaveKioskCustomization({ force: true });
       loadGallery();
     });
   }
@@ -546,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const settings = webcamStream.getVideoTracks()[0]?.getSettings();
         console.info('Webcam stream:', `${settings?.width || '?'}x${settings?.height || '?'}`, `${settings?.frameRate || '?'} fps`);
         // try to play — ignore promise rejection that occurs when autoplay is blocked
-        videoWebcam.play().catch(() => {});
+        videoWebcam.play().catch(() => { });
       }
     } catch (err) {
       console.warn('Unable to start webcam:', err);
@@ -586,12 +592,12 @@ document.addEventListener('DOMContentLoaded', () => {
       currentSessionDir = sessionData.session_dir;
       isEditingGallerySession = false;
       currentGallerySessionTimestamp = null;
-      
+
       // Reset UI customizations for new capture
       selectedFrameColor = '#ffffff';
       const colorDots = document.querySelectorAll('#frame-color-palette .color-dot');
       if (colorDots) {
-          colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
+        colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
       }
 
       // Ensure webcam is started and attached
@@ -1249,7 +1255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasActiveText = kioskTextOverlay.trim().length > 0;
     const isUnsaved = hasUnsavedFrameChange || hasActiveStickers || hasActiveText || hasUnsavedCustomization;
     btnSaveCustomization.disabled = !isUnsaved;
-    btnSaveCustomization.innerHTML = isUnsaved ? 'Save' : 'Saved ✓';
+    btnSaveCustomization.innerHTML = isUnsaved ? 'Save Your Edits' : 'Saved ✓';
   }
 
   // Color dots click events (Frame Color)
@@ -1587,7 +1593,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateSaveCustomizationState();
       try {
         await document.fonts.load(`90px "${kioskFontFamily}"`);
-      } catch(e) {}
+      } catch (e) { }
       drawKioskCanvas();
     });
   }
@@ -1984,7 +1990,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startPos: pos,
             startRotation: kioskTextRotation
           };
-          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) { }
           updateKioskCanvasCursor(pos);
           return;
         }
@@ -1999,7 +2005,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startFontSize: kioskFontSize,
             startDist: Math.max(10, initialDist)
           };
-          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) { }
           updateKioskCanvasCursor(pos);
           return;
         }
@@ -2012,7 +2018,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startTextX: kioskTextX,
             startTextY: kioskTextY
           };
-          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) { }
           updateKioskCanvasCursor(pos);
           return;
         }
@@ -2040,7 +2046,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startPos: pos,
             startRotation: kioskSelectedSticker.rotation
           };
-          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) { }
           updateKioskCanvasCursor(pos);
           return;
         }
@@ -2055,7 +2061,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startHeight: kioskSelectedSticker.height,
             startDist: Math.max(10, initialDist)
           };
-          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) { }
           updateKioskCanvasCursor(pos);
           return;
         }
@@ -2067,7 +2073,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startStickerX: kioskSelectedSticker.x,
             startStickerY: kioskSelectedSticker.y
           };
-          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) { }
           updateKioskCanvasCursor(pos);
           return;
         }
@@ -2088,7 +2094,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startStickerX: s.x,
             startStickerY: s.y
           };
-          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+          try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) { }
           updateKioskCanvasCursor(pos);
           return;
         }
@@ -2106,7 +2112,7 @@ document.addEventListener('DOMContentLoaded', () => {
           startTextX: kioskTextX,
           startTextY: kioskTextY
         };
-        try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+        try { kioskCollageCanvas.setPointerCapture(e.pointerId); } catch (_) { }
         updateKioskCanvasCursor(pos);
         return;
       }
@@ -2205,7 +2211,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const endPointerAction = (e) => {
       if (kioskActiveDrag) {
-        try { kioskCollageCanvas.releasePointerCapture(e.pointerId); } catch (_) {}
+        try { kioskCollageCanvas.releasePointerCapture(e.pointerId); } catch (_) { }
         kioskActiveDrag = null;
         updateKioskCanvasCursor(getKioskCanvasPos(e));
         drawKioskCanvas();
@@ -2219,8 +2225,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // Save Customization Button Listener
   // =========================================================================
-  async function autoSaveKioskCustomization() {
-    if (!hasUnsavedCustomization || !btnSaveCustomization || btnSaveCustomization.disabled) return;
+  async function autoSaveKioskCustomization({ keepDirty = false, force = false } = {}) {
+    if (!hasUnsavedCustomization || !btnSaveCustomization || (!force && btnSaveCustomization.disabled)) return;
     btnSaveCustomization.disabled = true;
     const oldText = btnSaveCustomization.textContent;
     btnSaveCustomization.textContent = 'Saving...';
@@ -2237,6 +2243,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const saveData = new FormData();
       saveData.append('session_dir', currentSessionDir);
       saveData.append('timestamp', currentGallerySessionTimestamp || '');
+      if (keepDirty) {
+        saveData.append('is_original', 'true');
+      }
       saveData.append('image', editedImage, 'photostrip.jpg');
       const response = await fetch('/api/customer/save_edit', {
         method: 'POST',
@@ -2246,9 +2255,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await response.json();
       if (result.error) throw new Error(result.error);
 
-      savedFrameColor = selectedFrameColor;
-      hasUnsavedCustomization = false;
-      btnSaveCustomization.textContent = 'Saved ✓';
+      if (keepDirty) {
+        // This is the automatic safety copy made on entering the preview. Do
+        // not mark the editor clean: a subsequent manual Save can still store
+        // any changes the customer makes while this background save completes.
+        hasUnsavedCustomization = true;
+        btnSaveCustomization.textContent = 'Auto-saved ✓';
+      } else {
+        savedFrameColor = selectedFrameColor;
+        hasUnsavedCustomization = false;
+        btnSaveCustomization.textContent = 'Saved ✓';
+      }
       if (imgCollagePreview && result.collage_edited_url) {
         imgCollagePreview.src = result.collage_edited_url + '?t=' + Date.now();
       }
@@ -2331,6 +2348,11 @@ document.addEventListener('DOMContentLoaded', () => {
       updateSaveCustomizationState();
 
       showScreen(screenReview);
+      // Persist the default, full-resolution strip immediately. The user can
+      // begin editing right away; this background save protects the session
+      // even if they leave the preview without pressing Save.
+      drawKioskCanvas();
+      void autoSaveKioskCustomization({ keepDirty: true });
 
     } catch (err) {
       console.error(err);
@@ -2343,7 +2365,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Review Actions
   // =========================================================================
   btnTakeMore.addEventListener('click', async () => {
-    await autoSaveKioskCustomization();
+    await autoSaveKioskCustomization({ force: true });
     capturedImages = [];
     await startCaptureSession();
   });
@@ -2390,57 +2412,57 @@ document.addEventListener('DOMContentLoaded', () => {
       galleryEmpty.classList.remove('hidden');
       return;
     }
-    
+
     // Sort oldest-first
     const sortedSessions = [...sessions].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-    
+
     sortedSessions.forEach((sess, index) => {
       const sessionNum = index + 1;
       const baseLabel = `Session ${sessionNum}`;
       if (sess.collage_url) {
         addGalleryCard(sess.collage_url, sess, false, baseLabel);
       }
-      
+
       const editedUrls = sess.collage_edited_urls || [];
       editedUrls.forEach((editUrl) => {
         addGalleryCard(editUrl, sess, true, `${baseLabel} (Edited)`);
       });
     });
   }
-  
+
   function addGalleryCard(imgUrl, session, isEdited, label) {
-      const card = document.createElement('div');
-      card.className = 'gallery-card';
-      card.tabIndex = 0;
-      card.setAttribute('role', 'button');
-      card.setAttribute('aria-label', 'Open photostrip preview');
+    const card = document.createElement('div');
+    card.className = 'gallery-card';
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', 'Open photostrip preview');
 
-      // Session label at the top (e.g. "SESSION 1", "SESSION 1 (EDITED)")
-      const sessionLabel = document.createElement('div');
-      sessionLabel.className = 'gallery-session-label';
-      sessionLabel.textContent = label || '';
+    // Session label at the top (e.g. "SESSION 1", "SESSION 1 (EDITED)")
+    const sessionLabel = document.createElement('div');
+    sessionLabel.className = 'gallery-session-label';
+    sessionLabel.textContent = label || '';
 
-      const img = document.createElement('img');
-      img.src = imgUrl + '?t=' + Date.now();
-      img.alt = 'Collage';
-      img.className = 'gallery-collage-preview';
-      const openPreview = () => openLightbox(img.src, session);
-      card.addEventListener('click', openPreview);
-      card.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          openPreview();
-        }
-      });
+    const img = document.createElement('img');
+    img.src = imgUrl + '?t=' + Date.now();
+    img.alt = 'Collage';
+    img.className = 'gallery-collage-preview';
+    const openPreview = () => openLightbox(img.src, session);
+    card.addEventListener('click', openPreview);
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openPreview();
+      }
+    });
 
-      // Date/time at the bottom
-      const time = document.createElement('div');
-      time.className = 'gallery-item-time';
-      time.textContent = session.time || '';
+    // Date/time at the bottom
+    const time = document.createElement('div');
+    time.className = 'gallery-item-time';
+    time.textContent = session.time || '';
 
-      card.append(sessionLabel, img, time);
+    card.append(sessionLabel, img, time);
 
-      gallerySessionsContainer.appendChild(card);
+    gallerySessionsContainer.appendChild(card);
   }
 
   // =========================================================================
@@ -2709,49 +2731,49 @@ document.addEventListener('DOMContentLoaded', () => {
       const parts = currentLightboxImgUrl.split('/');
       const filename = parts[parts.length - 1].split('?')[0];
       if (filename.startsWith('collage_')) {
-          let ts = filename.split('_')[1];
-          if (filename.startsWith('collage_edited_')) {
-              ts = filename.split('_')[2];
-          }
-          ts = ts.split('.')[0];
-          
-          currentGallerySessionTimestamp = currentLightboxSession?.timestamp || ts;
-          currentSessionDir = currentLightboxSession?.folder || customerName;
-          const targetImgUrl = currentLightboxImgUrl;
-          const targetFiles = (currentLightboxSession && currentLightboxSession.files && currentLightboxSession.files.length > 0)
-            ? currentLightboxSession.files
-            : [targetImgUrl];
+        let ts = filename.split('_')[1];
+        if (filename.startsWith('collage_edited_')) {
+          ts = filename.split('_')[2];
+        }
+        ts = ts.split('.')[0];
 
-          closeLightbox();
-          
-          // Reset UI
-          selectedFrameColor = '#ffffff';
-          savedFrameColor = '#ffffff';
-          selectedPhotoBorderStyle = 'none';
-          selectedPhotoRadius = 8;
-          updateFrameColorBadge('#ffffff', 'Pure White');
-          document.querySelectorAll('#kiosk-photo-border-options .frame-accent-btn').forEach(b => {
-            b.classList.toggle('active', b.dataset.border === 'none');
-          });
-          document.querySelectorAll('#kiosk-photo-corner-options .frame-corner-btn').forEach(b => {
-            b.classList.toggle('active', b.dataset.radius === '8');
-          });
-          hasUnsavedCustomization = false;
-          kioskCustomStickers = [];
-          kioskSelectedSticker = null;
-          kioskTextOverlay = '';
-          kioskIsTextSelected = false;
-          if (kioskOverlayTextInput) kioskOverlayTextInput.value = '';
-          updateKioskStickerControlsUI();
-          colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
-          
-          showScreen(screenReview);
-          
-          // Load photos into canvas
-          await loadKioskPhotosFromUrls(targetFiles);
-          updateSaveCustomizationState();
+        currentGallerySessionTimestamp = currentLightboxSession?.timestamp || ts;
+        currentSessionDir = currentLightboxSession?.folder || customerName;
+        const targetImgUrl = currentLightboxImgUrl;
+        const targetFiles = (currentLightboxSession && currentLightboxSession.files && currentLightboxSession.files.length > 0)
+          ? currentLightboxSession.files
+          : [targetImgUrl];
+
+        closeLightbox();
+
+        // Reset UI
+        selectedFrameColor = '#ffffff';
+        savedFrameColor = '#ffffff';
+        selectedPhotoBorderStyle = 'none';
+        selectedPhotoRadius = 8;
+        updateFrameColorBadge('#ffffff', 'Pure White');
+        document.querySelectorAll('#kiosk-photo-border-options .frame-accent-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.border === 'none');
+        });
+        document.querySelectorAll('#kiosk-photo-corner-options .frame-corner-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.radius === '8');
+        });
+        hasUnsavedCustomization = false;
+        kioskCustomStickers = [];
+        kioskSelectedSticker = null;
+        kioskTextOverlay = '';
+        kioskIsTextSelected = false;
+        if (kioskOverlayTextInput) kioskOverlayTextInput.value = '';
+        updateKioskStickerControlsUI();
+        colorDots.forEach(d => d.classList.toggle('active', d.dataset.color === '#ffffff'));
+
+        showScreen(screenReview);
+
+        // Load photos into canvas
+        await loadKioskPhotosFromUrls(targetFiles);
+        updateSaveCustomizationState();
       } else {
-          alert('You can only edit collages, not individual photos or animations.');
+        alert('You can only edit collages, not individual photos or animations.');
       }
     });
   }

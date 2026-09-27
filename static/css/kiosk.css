@@ -1324,10 +1324,10 @@ button.btn-go:focus .key-badge {
   position: relative;
   width: 100%;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 0.75rem 0.95rem;
-  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(110, 22, 60, 0.08);
+  border-radius: 16px;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 4px 20px rgba(41, 17, 31, 0.06);
   flex: 1;
   overflow: hidden; /* Prevent the entire panel from scrolling */
   display: flex;
@@ -1759,20 +1759,23 @@ button.btn-go:focus .key-badge {
 
 .kiosk-font-select {
   width: 100%;
-  padding: 0.42rem 0.35rem;
-  font-size: 0.78rem;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  padding: 0.5rem 0.4rem;
+  font-size: 0.85rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-strong);
+  background: #fdfafb;
   color: var(--text-primary);
   font-family: inherit;
   outline: none;
-  transition: all 0.15s ease;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.kiosk-font-select:focus {
+.kiosk-font-select:focus, .kiosk-font-select:hover {
   border-color: var(--accent-coral);
-  box-shadow: 0 0 0 2px rgba(255, 70, 150, 0.2);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(255, 70, 150, 0.15);
 }
 
 .kiosk-text-styling-bar {
@@ -2641,47 +2644,56 @@ button.btn-go:focus .key-badge {
 
 /* Added for prominent save button */
 .btn-save-prominent {
-  background: var(--accent-coral);
+  background: linear-gradient(135deg, var(--accent-coral) 0%, #e83377 100%);
   color: #fff;
-  border: 2px solid var(--accent-coral);
+  border: none;
   border-radius: var(--radius-full);
-  padding: 1.5rem 2.5rem;
-  font-size: 1.4rem;
-  font-weight: 700;
+  padding: 1.2rem 2.5rem;
+  font-size: 1.3rem;
+  font-weight: 800;
   font-family: var(--font-display);
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(255, 70, 150, 0.3);
-  margin-bottom: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 6px 16px rgba(255, 70, 150, 0.35), inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: 0.6rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-.btn-save-prominent:hover {
-  background: #e6357f;
-  border-color: #e6357f;
-  transform: scale(1.02);
-  box-shadow: 0 6px 20px rgba(255, 70, 150, 0.4);
+.btn-save-prominent:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 70, 150, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+  filter: brightness(1.05);
+}
+
+.btn-save-prominent:disabled {
+  background: #f4dce5;
+  color: #d18ba6;
+  box-shadow: none;
+  cursor: default;
+  transform: none;
+  text-shadow: none;
 }
 
 /* Added for prominent retake button */
 .btn-retake-prominent {
-  background: var(--text-primary);
+  background: linear-gradient(135deg, var(--text-primary) 0%, #2b1f3d 100%);
   color: #fff;
-  border: 2px solid var(--text-primary);
+  border: none;
   border-radius: var(--radius-full);
-  padding: 1.5rem 2.5rem;
-  font-size: 1.4rem;
+  padding: 1.2rem 2.5rem;
+  font-size: 1.2rem;
   font-weight: 700;
   font-family: var(--font-display);
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-soft);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 6px 16px rgba(30, 16, 51, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
   margin-bottom: 0.5rem;
 }
 
 .btn-retake-prominent:hover {
-  background: var(--text-secondary);
-  border-color: var(--text-secondary);
   transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(30, 16, 51, 0.4), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+  filter: brightness(1.1);
 }
 
 .btn-save-custom {
