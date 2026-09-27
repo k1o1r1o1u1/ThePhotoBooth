@@ -1,5 +1,8 @@
 *.gif
 *.png
+!static/stickers/**/*.png
+!static/stickers/**/*.gif
+!static/logo.png
 .DS_Store
 *.pyc
 .flask_secret
@@ -13,4 +16,5 @@ build
 dist
 .ngrok.exe
 test_copy
-..
+process_stickers.py
+cleanup_stickers.py

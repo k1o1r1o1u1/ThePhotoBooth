@@ -683,7 +683,10 @@ def get_available_stickers():
     stickers = []
     if os.path.exists(kawaii_dir):
         for f in sorted(os.listdir(kawaii_dir)):
-            if f.lower().endswith(('.png', '.webp', '.jpg', '.jpeg', '.svg')):
+            # The panel shows the prepared transparent PNG collection only.
+            # Original JPEG source files stay in the folder for safekeeping
+            # but should never appear as duplicate stickers.
+            if f.lower().endswith('.png'):
                 clean_name = os.path.splitext(f)[0]
                 if clean_name.startswith('kawaii_'):
                     clean_name = clean_name[7:]
