@@ -60,6 +60,8 @@ if not os.path.exists(SETTINGS_PATH):
 # PyInstaller extracts bundled files to a temporary folder for every run.
 # Serve bundled web assets explicitly so uploaded photos can persist beside EXE.
 app = Flask(__name__, static_folder=None)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 # Secure secret key for session management – persists across restarts
 # so that existing client session cookies remain valid.
 _secret_path = os.path.join(APP_DATA_DIR, '.flask_secret')
@@ -72,6 +74,13 @@ else:
         _f.write(app.secret_key)
 # Keep the server session alive for the configured kiosk duration plus a buffer.
 app.permanent_session_lifetime = timedelta(minutes=settings['session_duration_minutes'] + 1)
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = '*'
+    return response
 
 # Ensure static/photos directory exists
 os.makedirs(PHOTOS_DIR, exist_ok=True)
@@ -144,7 +153,12 @@ initialise_token_db()
 @app.route('/static/photos/<path:filename>')
 def serve_photo(filename):
     """Serve persistent photos saved beside this executable."""
-    return send_from_directory(PHOTOS_DIR, filename)
+    resp = send_from_directory(PHOTOS_DIR, filename)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+    resp.headers['Access-Control-Allow-Headers'] = '*'
+    resp.headers['Cache-Control'] = 'no-cache, must-revalidate'
+    return resp
 
 
 @app.route('/api/photo/download/<path:filename>')
@@ -161,7 +175,11 @@ def download_photo(filename):
 @app.route('/static/<path:filename>')
 def serve_static_asset(filename):
     """Serve CSS, JavaScript, and other bundled assets."""
-    return send_from_directory(BUNDLED_STATIC_DIR, filename)
+    resp = send_from_directory(BUNDLED_STATIC_DIR, filename)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+    resp.headers['Access-Control-Allow-Headers'] = '*'
+    return resp
 
 def sanitize_filename(name: str) -> str:
     """Return a filesystem‑safe version of a user supplied name."""
@@ -694,6 +712,26 @@ def render_preview():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/stickers', methods=['GET'])
+def get_available_stickers():
+    kawaii_dir = os.path.join(app.root_path, 'static', 'stickers', 'kawaii')
+    stickers = []
+    if os.path.exists(kawaii_dir):
+        for f in sorted(os.listdir(kawaii_dir)):
+            if f.lower().endswith(('.png', '.webp', '.jpg', '.jpeg', '.svg')):
+                clean_name = os.path.splitext(f)[0]
+                if clean_name.startswith('kawaii_'):
+                    clean_name = clean_name[7:]
+                name = clean_name.replace('_', ' ').replace('-', ' ').title()
+                stickers.append({
+                    'id': f,
+                    'file': f,
+                    'name': name,
+                    'url': f'/static/stickers/kawaii/{f}'
+                })
+    return jsonify({'stickers': stickers})
+
+
 @app.route('/api/session/edit_existing', methods=['POST'])
 def edit_existing():
     """Rebuilds the collage for an existing session with new frame color and stickers."""
@@ -952,6 +990,37 @@ def save_edit():
         img_bytes = base64.b64decode(edited_img_base64)
         img = Image.open(BytesIO(img_bytes)).convert('RGB')
         # Use current time as unique edit identifier to support multiple edits
+        import time as time_mod
+        edit_ts = str(int(time_mod.time()))
+        filename = f"collage_edited_{timestamp}_{edit_ts}.jpg" if timestamp else f"collage_edited_{edit_ts}.jpg"
+        filepath = os.path.join(session_path, filename)
+        img.save(filepath, 'JPEG', quality=95)
+        return jsonify({
+            'status': 'success',
+            'collage_edited_url': f"/static/photos/{session_dir}/{filename}"
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ---------------------------------------------------------------------------
+# Customer edit save
+# ---------------------------------------------------------------------------
+@app.route('/api/customer/save_edit', methods=['POST'])
+def customer_save_edit():
+    data = request.json or {}
+    session_dir = session.get('session_dir') or data.get('session_dir')
+    timestamp = data.get('timestamp')
+    edited_img_base64 = data.get('image')
+    if not session_dir or not edited_img_base64:
+        return jsonify({'error': 'Missing session_dir or image data'}), 400
+    session_path = os.path.join(PHOTOS_DIR, session_dir)
+    if not os.path.exists(session_path):
+        return jsonify({'error': 'Session directory not found'}), 404
+    try:
+        if ',' in edited_img_base64:
+            edited_img_base64 = edited_img_base64.split(',')[1]
+        img_bytes = base64.b64decode(edited_img_base64)
+        img = Image.open(BytesIO(img_bytes)).convert('RGB')
         import time as time_mod
         edit_ts = str(int(time_mod.time()))
         filename = f"collage_edited_{timestamp}_{edit_ts}.jpg" if timestamp else f"collage_edited_{edit_ts}.jpg"

@@ -33,6 +33,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const galleryGrid = document.getElementById('gallery-grid');
   const btnBackToCustomers = document.getElementById('btn-back-to-customers');
   const galleryCustomerName = document.getElementById('gallery-customer-name');
+  const btnCombineMode = document.getElementById('btn-combine-mode');
+  const btnCombineSelected = document.getElementById('btn-combine-selected');
+  const combinePreviewModal = document.getElementById('combine-preview-modal');
+  const combinePreviewModalImg = document.getElementById('combine-preview-modal-img');
+  const btnCombinePreviewClose = document.getElementById('btn-combine-preview-close');
+  const btnCombinePreviewDownload = document.getElementById('btn-combine-preview-download');
+
+  let isCombineMode = false;
+  let combineSelectedItems = []; // Will hold {imgUrl}
 
   // --- Editor View Elements ---
   const btnBackToGallery = document.getElementById('btn-back-to-gallery');
@@ -46,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterBtns = document.querySelectorAll('.filter-btn');
   const overlayTextInput = document.getElementById('overlay-text');
   const fontFamilySelect = document.getElementById('font-family');
-  const fontColorSelect = document.getElementById('font-color');
   const btnApplyText = document.getElementById('btn-apply-text');
   const btnSaveEdit = document.getElementById('btn-save-edit');
   const btnPrint = document.getElementById('btn-print');
@@ -54,6 +62,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const colorDots = document.querySelectorAll('#frame-color-palette .color-dot');
   const customColorPicker = document.getElementById('custom-color-picker');
   const packBtns = document.querySelectorAll('#sticker-packs-grid .pack-btn');
+
+  // MS Word Color Picker Elements
+  const btnMSWordColorToggle = document.getElementById('btn-msword-color-toggle');
+  const mswordPaletteDropdown = document.getElementById('msword-palette-dropdown');
+  const mswordActiveColorBar = document.getElementById('msword-active-color-bar');
+  const mswordColorName = document.getElementById('msword-color-name');
+  const mswordThemeTopRow = document.getElementById('msword-theme-top-row');
+  const mswordThemeShadesGrid = document.getElementById('msword-theme-shades-grid');
+  const mswordStandardGrid = document.getElementById('msword-standard-grid');
+  const mswordCustomColorInput = document.getElementById('msword-custom-color-input');
 
   // Sliders & Lightbox
   const sliderBrightness = document.getElementById('slider-brightness');
@@ -88,14 +106,14 @@ document.addEventListener('DOMContentLoaded', () => {
   stickersImage.crossOrigin = 'anonymous';
   stickersImage.onload = drawCanvas;
   
-  // Draggable Text State
+  // Draggable Text State (MS Word-style interactive overlay)
   let textX = COLLAGE_WIDTH / 2;
-  let textY = COLLAGE_HEIGHT - 100;
-  let isDraggingText = false;
-  let dragOffsetX = 0;
-  let dragOffsetY = 0;
-  let fontSize = 60;
-  let isBold = false;
+  let textY = COLLAGE_HEIGHT - 120;
+  let textRotation = 0;
+  let isTextSelected = false;
+  let fontColor = '#000000';
+  let fontSize = 90;
+  let isBold = true;
   let isItalic = false;
   let isUnderline = false;
   
@@ -110,6 +128,48 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateCanvasTransform() {
     canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
   }
+
+  // --- Kawaii Custom Stickers State & Catalog ---
+  const DEFAULT_KAWAII_STICKERS = [
+    { id: 'cake', name: 'Cake', file: 'cake.png' },
+    { id: 'camera', name: 'Camera', file: 'camera.png' },
+    { id: 'milk-box', name: 'Milk Box', file: 'milk-box.png' },
+    { id: 'movie-ticket', name: 'Movie Ticket', file: 'movie-ticket.png' },
+    { id: 'pancake', name: 'Pancake', file: 'pancake.png' },
+    { id: 'card_game', name: 'Card Game', file: 'card_game.png' },
+    { id: 'beat_around_bush', name: 'Beat Around Bush', file: 'beat_around_bush.png' },
+    { id: 'finger_heart', name: 'Finger Heart', file: 'finger_heart.png' },
+    { id: 'anime_finger_heart', name: 'Anime Heart Girl', file: 'anime_finger_heart.png' },
+    { id: 'cute_bunny_love', name: 'Cute Bunny Love', file: 'cute_bunny_love.png' },
+    { id: 'rose_apple', name: 'Rose Apple', file: 'rose_apple.png' },
+    { id: 'star_heart_duo', name: 'Star & Heart', file: 'star_heart_duo.png' },
+    { id: 'kawaii_fluffy_puppy', name: 'Fluffy Puppy', file: 'kawaii_fluffy_puppy.png' },
+    { id: 'kawaii_bunny_heart', name: 'Bunny & Heart', file: 'kawaii_bunny_heart.png' },
+    { id: 'kawaii_flower_ghost', name: 'Flower Ghost', file: 'kawaii_flower_ghost.png' },
+    { id: 'kawaii_donut_stack', name: 'Donut Stack', file: 'kawaii_donut_stack.png' },
+    { id: 'kawaii_cute_kitten', name: 'Cute Kitten', file: 'kawaii_cute_kitten.png' },
+    { id: 'kawaii_shiba_dog', name: 'Strawberry Shiba', file: 'kawaii_shiba_dog.png' },
+    { id: 'kawaii_golden_puppy', name: 'Golden Puppy', file: 'kawaii_golden_puppy.png' },
+    { id: 'kawaii_heart_wings', name: 'Angel Heart', file: 'kawaii_heart_wings.png' },
+    { id: 'kawaii_paws', name: 'Kawaii Paws', file: 'kawaii_paws.png' },
+    { id: 'kawaii_banana_cat', name: 'Banana Cat', file: 'kawaii_banana_cat.png' },
+    { id: 'kawaii_apple_cat', name: 'Apple Cat', file: 'kawaii_apple_cat.png' },
+    { id: 'kawaii_baby_patrick', name: 'Baby Patrick', file: 'kawaii_baby_patrick.png' },
+    { id: 'kawaii_shinchan_belly', name: 'Shinchan Belly', file: 'kawaii_shinchan_belly.png' },
+    { id: 'kawaii_piggy_heart', name: 'Winking Piggy', file: 'kawaii_piggy_heart.png' },
+    { id: 'kawaii_piggy_pose', name: 'Piggy Pose', file: 'kawaii_piggy_pose.png' },
+    { id: 'kawaii_pink_bow_cat', name: 'Pink Bow Cat', file: 'kawaii_pink_bow_cat.png' },
+    { id: 'kawaii_happy_chick', name: 'Happy Chick', file: 'kawaii_happy_chick.png' },
+    { id: 'kawaii_sparkle_eyes', name: 'Sparkle Eyes', file: 'kawaii_sparkle_eyes.png' },
+    { id: 'kawaii_sweet_kiss', name: 'Sweet Kiss', file: 'kawaii_sweet_kiss.png' },
+    { id: 'kawaii_jerry_kiss', name: 'Jerry Kiss', file: 'kawaii_jerry_kiss.png' },
+    { id: 'kawaii_jerry_heartbeat', name: 'Jerry Heartbeat', file: 'kawaii_jerry_heartbeat.png' }
+  ];
+
+  let customStickers = []; // [{ id, name, file, img, x, y, width, height, aspectRatio, rotation, flipX }]
+  let selectedSticker = null;
+  let activeDrag = null; // null | { mode, sticker, ... }
+  let hasInteractedWithCanvas = false;
 
   // --- View Navigation ---
   function switchView(viewElement) {
@@ -442,11 +502,134 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="gallery-session-label">${sessionLabel}</div>
       <img src="${imgUrl}?t=${new Date().getTime()}" alt="Collage">
       <div class="gallery-item-time">${sess.time}</div>
+      <div class="combine-check hidden" style="position: absolute; top: 10px; right: 10px; background: white; border: 2px solid #ccc; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: transparent;">✓</div>
     `;
-    item.addEventListener('click', () => {
-      openPreviewModal(imgUrl, sess, customerData, isEdited);
+    
+    item.addEventListener('click', (e) => {
+      if (isCombineMode) {
+        const checkEl = item.querySelector('.combine-check');
+        const isSelected = combineSelectedItems.includes(imgUrl);
+        
+        if (isSelected) {
+          // Deselect
+          combineSelectedItems = combineSelectedItems.filter(url => url !== imgUrl);
+          checkEl.style.borderColor = '#ccc';
+          checkEl.style.background = 'white';
+          checkEl.style.color = 'transparent';
+          item.style.boxShadow = 'none';
+        } else {
+          // Select (limit to 2)
+          if (combineSelectedItems.length >= 2) {
+            alert("You can only select exactly 2 strips to combine.");
+            return;
+          }
+          combineSelectedItems.push(imgUrl);
+          checkEl.style.borderColor = 'var(--accent-green)';
+          checkEl.style.background = 'var(--accent-green)';
+          checkEl.style.color = 'white';
+          item.style.boxShadow = '0 0 0 3px var(--accent-green)';
+        }
+        
+        // Update Combine button text
+        btnCombineSelected.textContent = `Combine ${combineSelectedItems.length} Selected`;
+        if (combineSelectedItems.length === 2) {
+          btnCombineSelected.classList.remove('hidden');
+        } else {
+          btnCombineSelected.classList.add('hidden');
+        }
+      } else {
+        openPreviewModal(imgUrl, sess, customerData, isEdited);
+      }
     });
     galleryGrid.appendChild(item);
+  }
+
+  // --- Combine Mode Logic ---
+  if (btnCombineMode) {
+    btnCombineMode.addEventListener('click', () => {
+      isCombineMode = !isCombineMode;
+      btnCombineMode.classList.toggle('active', isCombineMode);
+      combineSelectedItems = [];
+      btnCombineSelected.classList.add('hidden');
+      btnCombineSelected.textContent = 'Combine 0 Selected';
+      
+      // Toggle checkboxes visibility
+      document.querySelectorAll('.combine-check').forEach(el => {
+        if (isCombineMode) {
+          el.classList.remove('hidden');
+          el.style.borderColor = '#ccc';
+          el.style.background = 'white';
+          el.style.color = 'transparent';
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+      // Clear borders
+      document.querySelectorAll('.gallery-item').forEach(el => el.style.boxShadow = 'none');
+    });
+  }
+
+  if (btnCombineSelected) {
+    btnCombineSelected.addEventListener('click', async () => {
+      if (combineSelectedItems.length !== 2) return;
+      
+      const img1 = new Image();
+      const img2 = new Image();
+      img1.crossOrigin = 'anonymous';
+      img2.crossOrigin = 'anonymous';
+      
+      await Promise.all([
+        new Promise(r => { img1.onload = r; img1.src = combineSelectedItems[0]; }),
+        new Promise(r => { img2.onload = r; img2.src = combineSelectedItems[1]; })
+      ]);
+      
+      const gap = 40;
+      const lineWidth = 4;
+      
+      const combineCanvas = document.createElement('canvas');
+      combineCanvas.width = img1.width + gap + lineWidth + gap + img2.width;
+      combineCanvas.height = Math.max(img1.height, img2.height);
+      
+      const combineCtx = combineCanvas.getContext('2d');
+      // Fill white background
+      combineCtx.fillStyle = '#ffffff';
+      combineCtx.fillRect(0, 0, combineCanvas.width, combineCanvas.height);
+      
+      // Draw first image
+      combineCtx.drawImage(img1, 0, 0);
+      
+      // Draw black line
+      combineCtx.fillStyle = '#000000';
+      combineCtx.fillRect(img1.width + gap, 0, lineWidth, combineCanvas.height);
+      
+      // Draw second image
+      combineCtx.drawImage(img2, img1.width + gap + lineWidth + gap, 0);
+      
+      // Show modal
+      const dataUrl = combineCanvas.toDataURL('image/jpeg', 0.95);
+      combinePreviewModalImg.src = dataUrl;
+      combinePreviewModal.style.display = 'flex';
+      setTimeout(() => combinePreviewModal.style.opacity = '1', 10);
+    });
+  }
+
+  if (btnCombinePreviewClose) {
+    btnCombinePreviewClose.addEventListener('click', () => {
+      combinePreviewModal.style.opacity = '0';
+      setTimeout(() => combinePreviewModal.style.display = 'none', 200);
+    });
+  }
+
+  if (btnCombinePreviewDownload) {
+    btnCombinePreviewDownload.addEventListener('click', () => {
+      const link = document.createElement('a');
+      const tokenNo = activeCustomer ? activeCustomer.folder : 'Unknown';
+      link.download = `combined_strip_Token${tokenNo}.jpg`;
+      link.href = combinePreviewModalImg.src;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
   }
 
   async function copyOriginalPhoto(imgUrl) {
@@ -673,19 +856,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (valContrast) valContrast.textContent = '100%';
     if (valSaturation) valSaturation.textContent = '100%';
     
-    // Reset Text Styles and Position
-    fontSize = 60;
-    isBold = false;
+    // Reset Text Styles, Position & Rotation
+    fontSize = 90;
+    isBold = true;
     isItalic = false;
     isUnderline = false;
-    if (sliderFontSize) sliderFontSize.value = 60;
-    if (valFontSize) valFontSize.textContent = '60px';
-    if (btnTextBold) btnTextBold.classList.remove('active');
+    textRotation = 0;
+    isTextSelected = false;
+    fontColor = '#000000';
+    if (sliderFontSize) sliderFontSize.value = 90;
+    if (valFontSize) valFontSize.textContent = '90px';
+    if (btnTextBold) btnTextBold.classList.add('active');
     if (btnTextItalic) btnTextItalic.classList.remove('active');
     if (btnTextUnderline) btnTextUnderline.classList.remove('active');
+    if (fontFamilySelect) fontFamilySelect.value = 'Courier Prime';
+    if (mswordActiveColorBar) mswordActiveColorBar.style.backgroundColor = '#000000';
+    if (mswordColorName) mswordColorName.textContent = 'Black';
     
     textX = COLLAGE_WIDTH / 2;
-    textY = COLLAGE_HEIGHT - 100;
+    textY = COLLAGE_HEIGHT - 120;
     
     // Reset Zoom and Pan
     zoomLevel = 1;
@@ -693,6 +882,11 @@ document.addEventListener('DOMContentLoaded', () => {
     panY = 0;
     updateCanvasTransform();
     
+    // Reset Custom Stickers
+    customStickers = [];
+    selectedSticker = null;
+    updateStickerControlsUI();
+
     // Reset UI selections
     selectedFrameColor = '#ffffff';
     selectedStickerPack = 'none';
@@ -741,7 +935,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- 5. Draw Canvas (Editor Logic) ---
-  function drawCanvas() {
+  function drawCanvas(isExporting = false) {
     if (!originalImage.src || !originalImage.width) return;
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -814,40 +1008,223 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset filter
     ctx.filter = 'none'; 
     
-    // LAYER 3: Stickers
+    // LAYER 3: Preset Stickers
     if (stickersImage && stickersImage.width > 0 && selectedStickerPack !== 'none') {
       ctx.drawImage(stickersImage, 0, 0, canvas.width, canvas.height);
     }
-    
-    // LAYER 4: Text overlay
-    if (textOverlay) {
-      const fontFamily = fontFamilySelect ? fontFamilySelect.value : 'Outfit';
-      const fontColor = fontColorSelect ? fontColorSelect.value : '#000000';
+
+    // LAYER 3.5: Custom Kawaii Placed Stickers
+    customStickers.forEach(sticker => {
+      if (!sticker.img || !sticker.img.complete) return;
+      ctx.save();
+      ctx.translate(sticker.x, sticker.y);
+      ctx.rotate(sticker.rotation);
+      if (sticker.flipX) {
+        ctx.scale(-1, 1);
+      }
       
+      const hw = sticker.width / 2;
+      const hh = sticker.height / 2;
+      ctx.drawImage(sticker.img, -hw, -hh, sticker.width, sticker.height);
+      ctx.restore();
+    });
+
+    // LAYER 3.6: Selection box & transformation handles (ONLY if !isExporting)
+    if (!isExporting && selectedSticker && selectedSticker.img && selectedSticker.img.complete) {
+      const s = selectedSticker;
+      const hw = s.width / 2;
+      const hh = s.height / 2;
+
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.rotation);
+
+      // Selection bounding box (cute vibrant pink dashed border)
+      ctx.strokeStyle = '#ff69b4';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([12, 8]);
+      ctx.strokeRect(-hw - 8, -hh - 8, s.width + 16, s.height + 16);
+      ctx.setLineDash([]);
+
+      // Top rotation handle stem
+      ctx.beginPath();
+      ctx.moveTo(0, -hh - 8);
+      ctx.lineTo(0, -hh - 50);
+      ctx.strokeStyle = '#ff69b4';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Top rotation grip button
+      ctx.beginPath();
+      ctx.arc(0, -hh - 50, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#ff69b4';
+      ctx.stroke();
+
+      ctx.font = 'bold 15px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ff69b4';
+      ctx.fillText('↻', 0, -hh - 50);
+
+      // Top-right Delete handle (✕)
+      ctx.beginPath();
+      ctx.arc(hw + 24, -hh - 24, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#ef4444';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('✕', hw + 24, -hh - 24);
+
+      // Top-left Flip handle (⇄)
+      ctx.beginPath();
+      ctx.arc(-hw - 24, -hh - 24, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#3b82f6';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('⇄', -hw - 24, -hh - 24);
+
+      // 4 Corner resize handles
+      const corners = [
+        [-hw - 8, -hh - 8], // TL
+        [hw + 8, -hh - 8],  // TR
+        [hw + 8, hh + 8],   // BR
+        [-hw - 8, hh + 8]   // BL
+      ];
+      corners.forEach(([cx, cy]) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#ff69b4';
+        ctx.stroke();
+      });
+
+      ctx.restore();
+    }
+    
+    // LAYER 4: Text overlay (MS Word-style interactive text)
+    if (textOverlay) {
+      const fontFamily = fontFamilySelect ? fontFamilySelect.value : 'Courier Prime';
+      const activeColor = fontColor || '#000000';
+
+      ctx.save();
+      ctx.translate(textX, textY);
+      ctx.rotate(textRotation);
+
       const fontStyle = `${isItalic ? 'italic ' : ''}${isBold ? 'bold ' : ''}${fontSize}px "${fontFamily}", sans-serif`;
       ctx.font = fontStyle;
       ctx.textAlign = 'center';
-      ctx.fillStyle = fontColor;
-      
-      // Outline to ensure visibility
-      ctx.strokeStyle = (fontColor === '#ffffff' || fontColor === '#00f0ff') ? '#000000' : '#ffffff';
-      ctx.lineWidth = Math.max(2, fontSize * 0.05);
-      ctx.strokeText(textOverlay, textX, textY);
-      ctx.fillText(textOverlay, textX, textY);
-      
+      ctx.textBaseline = 'middle';
+
+      const metrics = ctx.measureText(textOverlay);
+      const tw = metrics.width;
+      const th = fontSize;
+
+      // Outline to ensure crisp readability on any photo/background
+      ctx.strokeStyle = (activeColor.toLowerCase() === '#ffffff' || activeColor.toLowerCase() === '#fff') ? '#000000' : '#ffffff';
+      ctx.lineWidth = Math.max(3, fontSize * 0.06);
+      ctx.strokeText(textOverlay, 0, 0);
+
+      ctx.fillStyle = activeColor;
+      ctx.fillText(textOverlay, 0, 0);
+
       // Draw Underline
       if (isUnderline) {
-         const metrics = ctx.measureText(textOverlay);
-         const textWidth = metrics.width;
-         ctx.beginPath();
-         // textY is alphabetic baseline
-         const lineY = textY + fontSize * 0.15; 
-         ctx.moveTo(textX - textWidth / 2, lineY);
-         ctx.lineTo(textX + textWidth / 2, lineY);
-         ctx.lineWidth = Math.max(3, fontSize * 0.08);
-         ctx.strokeStyle = fontColor;
-         ctx.stroke();
+        ctx.beginPath();
+        const lineY = th * 0.48;
+        ctx.moveTo(-tw / 2, lineY);
+        ctx.lineTo(tw / 2, lineY);
+        ctx.lineWidth = Math.max(3, fontSize * 0.08);
+        ctx.strokeStyle = activeColor;
+        ctx.stroke();
       }
+
+      // LAYER 4.1: Direct MS Word-style selection box & handles (ONLY if !isExporting && isTextSelected)
+      if (!isExporting && isTextSelected) {
+        const hw = tw / 2 + 20;
+        const hh = th * 0.6 + 15;
+
+        // Bounding box (crisp modern blue dashed outline)
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([12, 8]);
+        ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
+        ctx.setLineDash([]);
+
+        // Top rotation handle stem
+        ctx.beginPath();
+        ctx.moveTo(0, -hh);
+        ctx.lineTo(0, -hh - 48);
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Top rotation grip button (↻)
+        ctx.beginPath();
+        ctx.arc(0, -hh - 48, 16, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#2563eb';
+        ctx.stroke();
+
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#2563eb';
+        ctx.fillText('↻', 0, -hh - 48);
+
+        // Top-right Delete handle (✕)
+        ctx.beginPath();
+        ctx.arc(hw + 24, -hh - 24, 16, 0, Math.PI * 2);
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('✕', hw + 24, -hh - 24);
+
+        // 4 Corner resize handles
+        const corners = [
+          [-hw, -hh], // TL
+          [hw, -hh],  // TR
+          [hw, hh],   // BR
+          [-hw, hh]   // BL
+        ];
+        corners.forEach(([cx, cy]) => {
+          ctx.beginPath();
+          ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = '#2563eb';
+          ctx.stroke();
+        });
+      }
+
+      ctx.restore();
     }
   }
 
@@ -863,6 +1240,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnApplyText) {
     btnApplyText.addEventListener('click', () => {
       textOverlay = overlayTextInput.value.trim();
+      if (textOverlay) isTextSelected = true;
+      drawCanvas();
+    });
+  }
+
+  if (overlayTextInput) {
+    overlayTextInput.addEventListener('input', () => {
+      textOverlay = overlayTextInput.value.trim();
+      if (textOverlay) isTextSelected = true;
       drawCanvas();
     });
   }
@@ -872,12 +1258,20 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClearText.addEventListener('click', () => {
       overlayTextInput.value = '';
       textOverlay = '';
+      isTextSelected = false;
       drawCanvas();
     });
   }
 
-  if (fontFamilySelect) fontFamilySelect.addEventListener('change', drawCanvas);
-  if (fontColorSelect) fontColorSelect.addEventListener('change', drawCanvas);
+  if (fontFamilySelect) {
+    fontFamilySelect.addEventListener('change', async () => {
+      try {
+        const font = fontFamilySelect.value;
+        await document.fonts.load(`90px "${font}"`);
+      } catch (e) {}
+      drawCanvas();
+    });
+  }
 
   // Text Styling Listeners
   const sliderFontSize = document.getElementById('slider-font-size');
@@ -918,7 +1312,148 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Text Dragging Logic
+  // --- MS Word Font Color Picker Palette Generator ---
+  const MSWORD_THEME_BASE = [
+    { hex: '#ffffff', name: 'White' },
+    { hex: '#000000', name: 'Black' },
+    { hex: '#eeece1', name: 'Warm Gray' },
+    { hex: '#1f497d', name: 'Dark Blue' },
+    { hex: '#4f81bd', name: 'Blue' },
+    { hex: '#c0504d', name: 'Red' },
+    { hex: '#9bbb59', name: 'Olive Green' },
+    { hex: '#8064a2', name: 'Purple' },
+    { hex: '#4bacc6', name: 'Aqua' },
+    { hex: '#f79646', name: 'Orange' }
+  ];
+
+  const MSWORD_THEME_SHADES = [
+    // Col 0 (White)
+    ['#f2f2f2', '#d9d9d9', '#bfbfbf', '#a6a6a6', '#7f7f7f'],
+    // Col 1 (Black)
+    ['#7f7f7f', '#595959', '#3f3f3f', '#262626', '#0d0d0d'],
+    // Col 2 (Warm Gray)
+    ['#ddd9c3', '#c4bd97', '#948a54', '#4a452a', '#1e1c11'],
+    // Col 3 (Dark Blue)
+    ['#c6d9f1', '#8eb4e3', '#558ed5', '#17375e', '#10243f'],
+    // Col 4 (Blue)
+    ['#dce6f2', '#b9cde5', '#95b3d7', '#376092', '#254061'],
+    // Col 5 (Red)
+    ['#f2dcdb', '#e6b9b8', '#d99694', '#963634', '#632523'],
+    // Col 6 (Olive Green)
+    ['#ebf1de', '#d7e4bd', '#c3d69b', '#77933c', '#4f6228'],
+    // Col 7 (Purple)
+    ['#e6e0ec', '#ccc1db', '#b3a2c7', '#604a7b', '#403152'],
+    // Col 8 (Aqua)
+    ['#dbeef4', '#b7dde8', '#93cddd', '#31859c', '#215968'],
+    // Col 9 (Orange)
+    ['#fdeada', '#fcd5b5', '#fac090', '#e46c0a', '#984807']
+  ];
+
+  const MSWORD_STANDARD_COLORS = [
+    { hex: '#c00000', name: 'Dark Red' },
+    { hex: '#ff0000', name: 'Red' },
+    { hex: '#ffc000', name: 'Orange' },
+    { hex: '#ffff00', name: 'Yellow' },
+    { hex: '#92d050', name: 'Light Green' },
+    { hex: '#00b050', name: 'Green' },
+    { hex: '#00b0f0', name: 'Light Blue' },
+    { hex: '#0070c0', name: 'Blue' },
+    { hex: '#002060', name: 'Dark Blue' },
+    { hex: '#7030a0', name: 'Purple' }
+  ];
+
+  function applyFontColor(hex, name) {
+    fontColor = hex;
+    if (mswordActiveColorBar) mswordActiveColorBar.style.backgroundColor = hex;
+    if (mswordColorName) mswordColorName.textContent = name || hex;
+    if (mswordPaletteDropdown) mswordPaletteDropdown.style.display = 'none';
+    
+    // Update active highlight on all swatches
+    document.querySelectorAll('.msword-swatch').forEach(sw => {
+      sw.classList.toggle('active', sw.dataset.color.toLowerCase() === hex.toLowerCase());
+    });
+
+    drawCanvas();
+  }
+
+  function initMSWordColorPicker() {
+    if (!mswordThemeTopRow || !mswordThemeShadesGrid || !mswordStandardGrid) return;
+
+    // 1. Top row of theme colors (10 swatches)
+    mswordThemeTopRow.innerHTML = '';
+    MSWORD_THEME_BASE.forEach(item => {
+      const swatch = document.createElement('div');
+      swatch.className = 'msword-swatch' + (item.hex === fontColor ? ' active' : '');
+      swatch.style.backgroundColor = item.hex;
+      swatch.title = item.name;
+      swatch.dataset.color = item.hex;
+      swatch.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyFontColor(item.hex, item.name);
+      });
+      mswordThemeTopRow.appendChild(swatch);
+    });
+
+    // 2. Shades grid: 5 rows of 10 columns
+    mswordThemeShadesGrid.innerHTML = '';
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 10; c++) {
+        const hex = MSWORD_THEME_SHADES[c][r];
+        const baseName = MSWORD_THEME_BASE[c].name;
+        const swatch = document.createElement('div');
+        swatch.className = 'msword-swatch' + (hex.toLowerCase() === fontColor.toLowerCase() ? ' active' : '');
+        swatch.style.backgroundColor = hex;
+        swatch.title = `${baseName} (shade ${r + 1})`;
+        swatch.dataset.color = hex;
+        swatch.addEventListener('click', (e) => {
+          e.stopPropagation();
+          applyFontColor(hex, baseName);
+        });
+        mswordThemeShadesGrid.appendChild(swatch);
+      }
+    }
+
+    // 3. Standard colors row (10 swatches)
+    mswordStandardGrid.innerHTML = '';
+    MSWORD_STANDARD_COLORS.forEach(item => {
+      const swatch = document.createElement('div');
+      swatch.className = 'msword-swatch' + (item.hex.toLowerCase() === fontColor.toLowerCase() ? ' active' : '');
+      swatch.style.backgroundColor = item.hex;
+      swatch.title = item.name;
+      swatch.dataset.color = item.hex;
+      swatch.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyFontColor(item.hex, item.name);
+      });
+      mswordStandardGrid.appendChild(swatch);
+    });
+
+    // 4. Toggle button click
+    if (btnMSWordColorToggle && mswordPaletteDropdown) {
+      btnMSWordColorToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = mswordPaletteDropdown.style.display === 'none';
+        mswordPaletteDropdown.style.display = isHidden ? 'block' : 'none';
+      });
+    }
+
+    // 5. Close dropdown if clicking outside
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('msword-color-picker-container');
+      if (container && !container.contains(e.target) && mswordPaletteDropdown) {
+        mswordPaletteDropdown.style.display = 'none';
+      }
+    });
+
+    // 6. Custom color picker input
+    if (mswordCustomColorInput) {
+      mswordCustomColorInput.addEventListener('input', (e) => {
+        applyFontColor(e.target.value, e.target.value.toUpperCase());
+      });
+    }
+  }
+
+  // --- Kawaii Stickers UI & Interaction Helpers ---
   function getCanvasPos(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -929,51 +1464,689 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  canvasContainer.addEventListener('mousedown', (e) => {
-    // Check if clicking text
-    if (textOverlay) {
-      const pos = getCanvasPos(e);
-      ctx.font = `${isItalic ? 'italic ' : ''}${isBold ? 'bold ' : ''}${fontSize}px "${fontFamilySelect.value}", sans-serif`;
-      const metrics = ctx.measureText(textOverlay);
-      const textWidth = metrics.width;
-      const textHeight = fontSize;
-  
-      if (pos.x >= textX - textWidth / 2 && pos.x <= textX + textWidth / 2 &&
-          pos.y >= textY - textHeight && pos.y <= textY + 20) {
-        isDraggingText = true;
-        dragOffsetX = pos.x - textX;
-        dragOffsetY = pos.y - textY;
-        canvasContainer.style.cursor = 'grabbing';
-        return; // Don't start panning if dragging text
+  function getStickerHandleAt(s, px, py) {
+    const dx = px - s.x;
+    const dy = py - s.y;
+    const cos = Math.cos(-s.rotation);
+    const sin = Math.sin(-s.rotation);
+    const lx = dx * cos - dy * sin;
+    const ly = dx * sin + dy * cos;
+
+    const hw = s.width / 2;
+    const hh = s.height / 2;
+    const handleHitRadius = 36; // Generous hit radius for smooth grabbing
+
+    // 1. Top Rotation Handle (center is at 0, -hh - 50)
+    if (Math.hypot(lx - 0, ly - (-hh - 50)) <= handleHitRadius) {
+      return 'rotate';
+    }
+
+    // 2. Top-Right Delete Handle (center is at hw + 24, -hh - 24)
+    if (Math.hypot(lx - (hw + 24), ly - (-hh - 24)) <= handleHitRadius) {
+      return 'delete';
+    }
+
+    // 3. Top-Left Flip Handle (center is at -hw - 24, -hh - 24)
+    if (Math.hypot(lx - (-hw - 24), ly - (-hh - 24)) <= handleHitRadius) {
+      return 'flip';
+    }
+
+    // 4. Corner Resize Handles (TL, TR, BR, BL)
+    if (Math.hypot(lx - (-hw - 8), ly - (-hh - 8)) <= handleHitRadius) {
+      return 'resize-tl';
+    }
+    if (Math.hypot(lx - (hw + 8), ly - (-hh - 8)) <= handleHitRadius) {
+      return 'resize-tr';
+    }
+    if (Math.hypot(lx - (hw + 8), ly - (hh + 8)) <= handleHitRadius) {
+      return 'resize-br';
+    }
+    if (Math.hypot(lx - (-hw - 8), ly - (hh + 8)) <= handleHitRadius) {
+      return 'resize-bl';
+    }
+
+    // 5. Sticker Body
+    if (Math.abs(lx) <= hw + 8 && Math.abs(ly) <= hh + 8) {
+      return 'body';
+    }
+
+    return null;
+  }
+
+  function isPointInsideSticker(s, px, py) {
+    const dx = px - s.x;
+    const dy = py - s.y;
+    const cos = Math.cos(-s.rotation);
+    const sin = Math.sin(-s.rotation);
+    const lx = dx * cos - dy * sin;
+    const ly = dx * sin + dy * cos;
+    return Math.abs(lx) <= s.width / 2 && Math.abs(ly) <= s.height / 2;
+  }
+
+  function getTextHandleAt(px, py) {
+    if (!textOverlay || !isTextSelected) return null;
+
+    const dx = px - textX;
+    const dy = py - textY;
+    const cos = Math.cos(-textRotation);
+    const sin = Math.sin(-textRotation);
+    const lx = dx * cos - dy * sin;
+    const ly = dx * sin + dy * cos;
+
+    ctx.save();
+    const fontFamily = fontFamilySelect ? fontFamilySelect.value : 'Courier Prime';
+    ctx.font = `${isItalic ? 'italic ' : ''}${isBold ? 'bold ' : ''}${fontSize}px "${fontFamily}", sans-serif`;
+    const tw = ctx.measureText(textOverlay).width;
+    const th = fontSize;
+    ctx.restore();
+
+    const hw = tw / 2 + 20;
+    const hh = th * 0.6 + 15;
+    const handleHitRadius = 36;
+
+    // 1. Top Rotation handle (0, -hh - 48)
+    if (Math.hypot(lx - 0, ly - (-hh - 48)) <= handleHitRadius) {
+      return 'rotate';
+    }
+
+    // 2. Top-right Delete handle (hw + 24, -hh - 24)
+    if (Math.hypot(lx - (hw + 24), ly - (-hh - 24)) <= handleHitRadius) {
+      return 'delete';
+    }
+
+    // 3. 4 Corner Resize handles
+    if (Math.hypot(lx - (-hw), ly - (-hh)) <= handleHitRadius) {
+      return 'resize-tl';
+    }
+    if (Math.hypot(lx - hw, ly - (-hh)) <= handleHitRadius) {
+      return 'resize-tr';
+    }
+    if (Math.hypot(lx - hw, ly - hh) <= handleHitRadius) {
+      return 'resize-br';
+    }
+    if (Math.hypot(lx - (-hw), ly - hh) <= handleHitRadius) {
+      return 'resize-bl';
+    }
+
+    // 4. Text Body
+    if (Math.abs(lx) <= hw && Math.abs(ly) <= hh) {
+      return 'body';
+    }
+
+    return null;
+  }
+
+  function isPointInsideText(px, py) {
+    if (!textOverlay) return false;
+    const dx = px - textX;
+    const dy = py - textY;
+    const cos = Math.cos(-textRotation);
+    const sin = Math.sin(-textRotation);
+    const lx = dx * cos - dy * sin;
+    const ly = dx * sin + dy * cos;
+
+    ctx.save();
+    const fontFamily = fontFamilySelect ? fontFamilySelect.value : 'Courier Prime';
+    ctx.font = `${isItalic ? 'italic ' : ''}${isBold ? 'bold ' : ''}${fontSize}px "${fontFamily}", sans-serif`;
+    const tw = ctx.measureText(textOverlay).width;
+    const th = fontSize;
+    ctx.restore();
+
+    const hw = tw / 2 + 25;
+    const hh = th * 0.6 + 20;
+    return Math.abs(lx) <= hw && Math.abs(ly) <= hh;
+  }
+
+  function updateCanvasCursor(pos) {
+    if (activeDrag) {
+      if (activeDrag.mode === 'sticker-move' || activeDrag.mode === 'text-move') {
+        canvas.style.cursor = 'grabbing';
+      } else if (activeDrag.mode === 'sticker-rotate' || activeDrag.mode === 'text-rotate') {
+        canvas.style.cursor = 'crosshair';
+      } else if (activeDrag.mode === 'sticker-resize' || activeDrag.mode === 'text-resize') {
+        canvas.style.cursor = 'nwse-resize';
+      }
+      return;
+    }
+
+    // Text handle cursors if text is selected
+    if (isTextSelected && textOverlay) {
+      const handle = getTextHandleAt(pos.x, pos.y);
+      if (handle === 'rotate') {
+        canvas.style.cursor = 'grab';
+        return;
+      }
+      if (handle === 'delete') {
+        canvas.style.cursor = 'pointer';
+        return;
+      }
+      if (handle === 'resize-tl' || handle === 'resize-br') {
+        canvas.style.cursor = 'nwse-resize';
+        return;
+      }
+      if (handle === 'resize-tr' || handle === 'resize-bl') {
+        canvas.style.cursor = 'nesw-resize';
+        return;
+      }
+      if (handle === 'body') {
+        canvas.style.cursor = 'grab';
+        return;
+      }
+    }
+
+    if (selectedSticker) {
+      const handle = getStickerHandleAt(selectedSticker, pos.x, pos.y);
+      if (handle === 'rotate') {
+        canvas.style.cursor = 'grab';
+        return;
+      }
+      if (handle === 'delete' || handle === 'flip') {
+        canvas.style.cursor = 'pointer';
+        return;
+      }
+      if (handle === 'resize-tl' || handle === 'resize-br') {
+        canvas.style.cursor = 'nwse-resize';
+        return;
+      }
+      if (handle === 'resize-tr' || handle === 'resize-bl') {
+        canvas.style.cursor = 'nesw-resize';
+        return;
+      }
+      if (handle === 'body') {
+        canvas.style.cursor = 'grab';
+        return;
+      }
+    }
+
+    for (let i = customStickers.length - 1; i >= 0; i--) {
+      if (isPointInsideSticker(customStickers[i], pos.x, pos.y)) {
+        canvas.style.cursor = 'pointer';
+        return;
+      }
+    }
+
+    if (isPointInsideText(pos.x, pos.y)) {
+      canvas.style.cursor = 'move';
+      return;
+    }
+
+    canvas.style.cursor = 'default';
+  }
+
+  async function initKawaiiStickersTray() {
+    const tray = document.getElementById('custom-stickers-tray');
+    if (!tray) return;
+
+    let stickersList = DEFAULT_KAWAII_STICKERS;
+
+    try {
+      const res = await fetch('/api/stickers');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.stickers && data.stickers.length > 0) {
+          stickersList = data.stickers;
+        }
+      }
+    } catch (err) {
+      console.warn('Using default sticker catalog:', err);
+    }
+
+    tray.innerHTML = '';
+    stickersList.forEach(item => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sticker-item-btn';
+      btn.title = `Click or drag ${item.name} to add to photostrip`;
+      btn.draggable = true;
+      btn.innerHTML = `
+        <img src="/static/stickers/kawaii/${item.file}" alt="${item.name}" draggable="false">
+        <span>${item.name}</span>
+      `;
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        addCustomSticker(item);
+      });
+
+      btn.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('application/json', JSON.stringify(item));
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+
+      tray.appendChild(btn);
+    });
+  }
+
+  function addCustomSticker(item, targetX, targetY) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const aspectRatio = img.width / img.height;
+      const baseW = 280;
+      const baseH = Math.round(baseW / aspectRatio);
+      
+      let spawnX = targetX;
+      let spawnY = targetY;
+      if (spawnX === undefined || spawnY === undefined) {
+        const offset = (customStickers.length % 5) * 50;
+        spawnX = Math.round(COLLAGE_WIDTH / 2 + (customStickers.length % 2 === 0 ? offset : -offset));
+        spawnY = Math.round(COLLAGE_HEIGHT * 0.45 + offset);
+      }
+      
+      const newSticker = {
+        id: 'stk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        name: item.name,
+        file: item.file,
+        img: img,
+        x: spawnX,
+        y: spawnY,
+        width: baseW,
+        height: baseH,
+        aspectRatio: aspectRatio,
+        rotation: 0,
+        flipX: false
+      };
+      
+      customStickers.push(newSticker);
+      selectedSticker = newSticker;
+      updateStickerControlsUI();
+      drawCanvas();
+    };
+    img.src = item.url || `/static/stickers/kawaii/${item.file}`;
+  }
+
+  function updateStickerControlsUI() {
+    const controls = document.getElementById('selected-sticker-controls');
+    const countBadge = document.getElementById('active-stickers-count');
+    const btnClearAll = document.getElementById('btn-clear-all-stickers');
+    const nameLabel = document.getElementById('selected-sticker-name');
+    
+    if (countBadge) {
+      if (customStickers.length > 0) {
+        countBadge.textContent = customStickers.length;
+        countBadge.style.display = 'inline-block';
+        if (btnClearAll) btnClearAll.style.display = 'inline-block';
+      } else {
+        countBadge.style.display = 'none';
+        if (btnClearAll) btnClearAll.style.display = 'none';
       }
     }
     
-    // Otherwise start panning
-    isPanning = true;
-    startPanX = e.clientX - panX;
-    startPanY = e.clientY - panY;
-    canvasContainer.style.cursor = 'grabbing';
-  });
+    if (controls) {
+      if (selectedSticker) {
+        controls.style.display = 'flex';
+        if (nameLabel) nameLabel.textContent = selectedSticker.name || 'Sticker';
+      } else {
+        controls.style.display = 'none';
+      }
+    }
+  }
 
-  window.addEventListener('mousemove', (e) => {
-    if (isDraggingText) {
-      const pos = getCanvasPos(e);
-      textX = pos.x - dragOffsetX;
-      textY = pos.y - dragOffsetY;
+  function deleteSelectedSticker() {
+    if (!selectedSticker) return;
+    customStickers = customStickers.filter(s => s.id !== selectedSticker.id);
+    selectedSticker = null;
+    updateStickerControlsUI();
+    drawCanvas();
+  }
+
+  function clearAllStickers() {
+    if (!customStickers.length) return;
+    if (confirm('Remove all custom stickers from this collage?')) {
+      customStickers = [];
+      selectedSticker = null;
+      updateStickerControlsUI();
       drawCanvas();
-    } else if (isPanning) {
-      panX = e.clientX - startPanX;
-      panY = e.clientY - startPanY;
-      updateCanvasTransform();
+    }
+  }
+
+  const btnDeleteSelectedSticker = document.getElementById('btn-delete-selected-sticker');
+  if (btnDeleteSelectedSticker) btnDeleteSelectedSticker.addEventListener('click', deleteSelectedSticker);
+
+  const btnClearAllStickers = document.getElementById('btn-clear-all-stickers');
+  if (btnClearAllStickers) btnClearAllStickers.addEventListener('click', clearAllStickers);
+
+  const btnRotateLeft = document.getElementById('btn-rotate-left');
+  if (btnRotateLeft) {
+    btnRotateLeft.addEventListener('click', () => {
+      if (!selectedSticker) return;
+      selectedSticker.rotation -= (15 * Math.PI / 180);
+      drawCanvas();
+    });
+  }
+
+  const btnRotateRight = document.getElementById('btn-rotate-right');
+  if (btnRotateRight) {
+    btnRotateRight.addEventListener('click', () => {
+      if (!selectedSticker) return;
+      selectedSticker.rotation += (15 * Math.PI / 180);
+      drawCanvas();
+    });
+  }
+
+  const btnScaleDown = document.getElementById('btn-scale-down');
+  if (btnScaleDown) {
+    btnScaleDown.addEventListener('click', () => {
+      if (!selectedSticker) return;
+      const newW = Math.max(60, selectedSticker.width * 0.85);
+      selectedSticker.width = Math.round(newW);
+      selectedSticker.height = Math.round(newW / selectedSticker.aspectRatio);
+      drawCanvas();
+    });
+  }
+
+  const btnScaleUp = document.getElementById('btn-scale-up');
+  if (btnScaleUp) {
+    btnScaleUp.addEventListener('click', () => {
+      if (!selectedSticker) return;
+      const newW = Math.min(COLLAGE_WIDTH * 0.95, selectedSticker.width * 1.15);
+      selectedSticker.width = Math.round(newW);
+      selectedSticker.height = Math.round(newW / selectedSticker.aspectRatio);
+      drawCanvas();
+    });
+  }
+
+  const btnFlipSticker = document.getElementById('btn-flip-sticker');
+  if (btnFlipSticker) {
+    btnFlipSticker.addEventListener('click', () => {
+      if (!selectedSticker) return;
+      selectedSticker.flipX = !selectedSticker.flipX;
+      drawCanvas();
+    });
+  }
+
+  const btnFrontSticker = document.getElementById('btn-front-sticker');
+  if (btnFrontSticker) {
+    btnFrontSticker.addEventListener('click', () => {
+      if (!selectedSticker) return;
+      customStickers = customStickers.filter(s => s.id !== selectedSticker.id);
+      customStickers.push(selectedSticker);
+      drawCanvas();
+    });
+  }
+
+  // --- MS Word-style Canvas Pointer / Mouse Handlers ---
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return; // Only primary mouse button
+    const pos = getCanvasPos(e);
+    hasInteractedWithCanvas = true;
+
+    // 0. Check selected text handle / body
+    if (isTextSelected && textOverlay) {
+      const textHandle = getTextHandleAt(pos.x, pos.y);
+      if (textHandle === 'delete') {
+        textOverlay = '';
+        overlayTextInput.value = '';
+        isTextSelected = false;
+        drawCanvas();
+        return;
+      }
+      if (textHandle === 'rotate') {
+        selectedSticker = null;
+        updateStickerControlsUI();
+        activeDrag = {
+          mode: 'text-rotate',
+          startPos: pos,
+          startRotation: textRotation
+        };
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        updateCanvasCursor(pos);
+        return;
+      }
+      if (textHandle && textHandle.startsWith('resize-')) {
+        selectedSticker = null;
+        updateStickerControlsUI();
+        const initialDist = Math.hypot(pos.x - textX, pos.y - textY);
+        activeDrag = {
+          mode: 'text-resize',
+          corner: textHandle.replace('resize-', ''),
+          startPos: pos,
+          startFontSize: fontSize,
+          startDist: Math.max(10, initialDist)
+        };
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        updateCanvasCursor(pos);
+        return;
+      }
+      if (textHandle === 'body') {
+        selectedSticker = null;
+        updateStickerControlsUI();
+        activeDrag = {
+          mode: 'text-move',
+          startPos: pos,
+          startTextX: textX,
+          startTextY: textY
+        };
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        updateCanvasCursor(pos);
+        return;
+      }
+    }
+
+    // 1. Check selected sticker handle / body
+    if (selectedSticker) {
+      isTextSelected = false;
+      const handle = getStickerHandleAt(selectedSticker, pos.x, pos.y);
+      if (handle === 'delete') {
+        deleteSelectedSticker();
+        return;
+      }
+      if (handle === 'flip') {
+        selectedSticker.flipX = !selectedSticker.flipX;
+        drawCanvas();
+        return;
+      }
+      if (handle === 'rotate') {
+        activeDrag = {
+          mode: 'sticker-rotate',
+          sticker: selectedSticker,
+          startPos: pos,
+          startRotation: selectedSticker.rotation
+        };
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        updateCanvasCursor(pos);
+        return;
+      }
+      if (handle && handle.startsWith('resize-')) {
+        const initialDist = Math.hypot(pos.x - selectedSticker.x, pos.y - selectedSticker.y);
+        activeDrag = {
+          mode: 'sticker-resize',
+          sticker: selectedSticker,
+          corner: handle.replace('resize-', ''),
+          startPos: pos,
+          startWidth: selectedSticker.width,
+          startHeight: selectedSticker.height,
+          startDist: Math.max(10, initialDist)
+        };
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        updateCanvasCursor(pos);
+        return;
+      }
+      if (handle === 'body') {
+        activeDrag = {
+          mode: 'sticker-move',
+          sticker: selectedSticker,
+          startPos: pos,
+          startStickerX: selectedSticker.x,
+          startStickerY: selectedSticker.y
+        };
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        updateCanvasCursor(pos);
+        return;
+      }
+    }
+
+    // 2. Check if clicking on another sticker (topmost first)
+    for (let i = customStickers.length - 1; i >= 0; i--) {
+      const s = customStickers[i];
+      if (isPointInsideSticker(s, pos.x, pos.y)) {
+        isTextSelected = false;
+        selectedSticker = s;
+        updateStickerControlsUI();
+        drawCanvas();
+        activeDrag = {
+          mode: 'sticker-move',
+          sticker: selectedSticker,
+          startPos: pos,
+          startStickerX: selectedSticker.x,
+          startStickerY: selectedSticker.y
+        };
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        updateCanvasCursor(pos);
+        return;
+      }
+    }
+
+    // 3. Check text overlay
+    if (isPointInsideText(pos.x, pos.y)) {
+      selectedSticker = null;
+      updateStickerControlsUI();
+      isTextSelected = true;
+      drawCanvas();
+      activeDrag = {
+        mode: 'text-move',
+        startPos: pos,
+        startTextX: textX,
+        startTextY: textY
+      };
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      updateCanvasCursor(pos);
+      return;
+    }
+
+    // 4. Clicked empty canvas space: deselect sticker & text
+    let needsRedraw = false;
+    if (selectedSticker) {
+      selectedSticker = null;
+      updateStickerControlsUI();
+      needsRedraw = true;
+    }
+    if (isTextSelected) {
+      isTextSelected = false;
+      needsRedraw = true;
+    }
+    if (needsRedraw) {
+      drawCanvas();
+      updateCanvasCursor(pos);
     }
   });
 
-  window.addEventListener('mouseup', () => {
-    isDraggingText = false;
-    isPanning = false;
-    canvasContainer.style.cursor = 'grab';
+  canvas.addEventListener('pointermove', (e) => {
+    const pos = getCanvasPos(e);
+
+    if (activeDrag) {
+      hasInteractedWithCanvas = true;
+
+      if (activeDrag.mode === 'sticker-move') {
+        const dx = pos.x - activeDrag.startPos.x;
+        const dy = pos.y - activeDrag.startPos.y;
+        activeDrag.sticker.x = Math.round(activeDrag.startStickerX + dx);
+        activeDrag.sticker.y = Math.round(activeDrag.startStickerY + dy);
+        canvas.style.cursor = 'grabbing';
+        drawCanvas();
+        return;
+      }
+
+      if (activeDrag.mode === 'sticker-rotate') {
+        const s = activeDrag.sticker;
+        const currentAngle = Math.atan2(pos.y - s.y, pos.x - s.x);
+        let angle = currentAngle + Math.PI / 2;
+        if (e.shiftKey) {
+          const snap = 15 * (Math.PI / 180);
+          angle = Math.round(angle / snap) * snap;
+        }
+        s.rotation = angle;
+        canvas.style.cursor = 'crosshair';
+        drawCanvas();
+        return;
+      }
+
+      if (activeDrag.mode === 'sticker-resize') {
+        const s = activeDrag.sticker;
+        const currentDist = Math.hypot(pos.x - s.x, pos.y - s.y);
+        const ratio = currentDist / activeDrag.startDist;
+        const targetW = Math.max(60, Math.min(COLLAGE_WIDTH * 1.5, Math.round(activeDrag.startWidth * ratio)));
+        s.width = targetW;
+        s.height = Math.round(targetW / s.aspectRatio);
+        canvas.style.cursor = 'nwse-resize';
+        drawCanvas();
+        return;
+      }
+
+      if (activeDrag.mode === 'text-move') {
+        const dx = pos.x - activeDrag.startPos.x;
+        const dy = pos.y - activeDrag.startPos.y;
+        textX = Math.round(activeDrag.startTextX + dx);
+        textY = Math.round(activeDrag.startTextY + dy);
+        canvas.style.cursor = 'grabbing';
+        drawCanvas();
+        return;
+      }
+
+      if (activeDrag.mode === 'text-rotate') {
+        const currentAngle = Math.atan2(pos.y - textY, pos.x - textX);
+        let angle = currentAngle + Math.PI / 2;
+        if (e.shiftKey) {
+          const snap = 15 * (Math.PI / 180);
+          angle = Math.round(angle / snap) * snap;
+        }
+        textRotation = angle;
+        canvas.style.cursor = 'crosshair';
+        drawCanvas();
+        return;
+      }
+
+      if (activeDrag.mode === 'text-resize') {
+        const currentDist = Math.hypot(pos.x - textX, pos.y - textY);
+        const ratio = currentDist / activeDrag.startDist;
+        const targetSize = Math.max(24, Math.min(220, Math.round(activeDrag.startFontSize * ratio)));
+        fontSize = targetSize;
+        if (sliderFontSize) sliderFontSize.value = targetSize;
+        if (valFontSize) valFontSize.textContent = targetSize + 'px';
+        canvas.style.cursor = 'nwse-resize';
+        drawCanvas();
+        return;
+      }
+    }
+
+    updateCanvasCursor(pos);
   });
-  
+
+  function handlePointerEnd(e) {
+    if (activeDrag) {
+      activeDrag = null;
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch (err) {}
+      const pos = getCanvasPos(e);
+      updateCanvasCursor(pos);
+      drawCanvas();
+    }
+  }
+
+  canvas.addEventListener('pointerup', handlePointerEnd);
+  canvas.addEventListener('pointercancel', handlePointerEnd);
+
+  // --- Drag and Drop from Tray directly to Canvas ---
+  canvas.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+
+  canvas.addEventListener('drop', (e) => {
+    e.preventDefault();
+    hasInteractedWithCanvas = true;
+    try {
+      const raw = e.dataTransfer.getData('application/json');
+      if (!raw) return;
+      const item = JSON.parse(raw);
+      const pos = getCanvasPos(e);
+      addCustomSticker(item, pos.x, pos.y);
+    } catch (err) {
+      console.error('Failed to drop sticker:', err);
+    }
+  });
+
   canvasContainer.addEventListener('wheel', (e) => {
     e.preventDefault();
     const zoomFactor = 0.1;
@@ -1011,9 +2184,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Lightbox logic
   if (canvasContainer && lightboxModal) {
-    canvasContainer.addEventListener('click', () => {
+    canvasContainer.addEventListener('click', (e) => {
+      if (hasInteractedWithCanvas) {
+        hasInteractedWithCanvas = false;
+        return;
+      }
+      if (e.target === canvas) return;
       if (!originalImage.src || !originalImage.width) return;
+      drawCanvas(true);
       lightboxImg.src = canvas.toDataURL('image/jpeg', 0.95);
+      drawCanvas(false);
       lightboxModal.classList.add('active');
     });
     
@@ -1082,7 +2262,10 @@ document.addEventListener('DOMContentLoaded', () => {
       btnSaveEdit.textContent = 'Saving...';
       
       try {
+        drawCanvas(true); // Draw clean without selection boxes or handles
         const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        drawCanvas(false); // Restore selection handles
+        
         const response = await fetch('/api/admin/save_edit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1120,13 +2303,84 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const link = document.createElement('a');
       link.download = `photostrip_${selectedSession.folder}.jpg`;
+      drawCanvas(true); // Draw clean without selection handles
       link.href = canvas.toDataURL('image/jpeg', 0.95);
+      drawCanvas(false); // Restore selection handles
       link.click();
     });
   }
 
   // Global Keyboard Shortcuts
   document.addEventListener('keydown', (e) => {
+    // If text is selected and user is not typing in a text field
+    if (isTextSelected && textOverlay && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        textOverlay = '';
+        overlayTextInput.value = '';
+        isTextSelected = false;
+        drawCanvas();
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        textX -= (e.shiftKey ? 20 : 5);
+        drawCanvas();
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        textX += (e.shiftKey ? 20 : 5);
+        drawCanvas();
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        textY -= (e.shiftKey ? 20 : 5);
+        drawCanvas();
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        textY += (e.shiftKey ? 20 : 5);
+        drawCanvas();
+        return;
+      }
+    }
+
+    // If a sticker is selected and user is not typing in a text field
+    if (selectedSticker && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelectedSticker();
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        selectedSticker.x -= (e.shiftKey ? 20 : 5);
+        drawCanvas();
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        selectedSticker.x += (e.shiftKey ? 20 : 5);
+        drawCanvas();
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedSticker.y -= (e.shiftKey ? 20 : 5);
+        drawCanvas();
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedSticker.y += (e.shiftKey ? 20 : 5);
+        drawCanvas();
+        return;
+      }
+    }
+
     if (e.key === 'Escape') {
       if (settingsModal.style.display === 'flex') {
         closeSettings();
@@ -1138,13 +2392,28 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       
-      // 2. If in Editor View, go back to Gallery
+      // 2. If text is selected, deselect it
+      if (isTextSelected) {
+        isTextSelected = false;
+        drawCanvas();
+        return;
+      }
+
+      // 3. If a sticker is selected, deselect it
+      if (selectedSticker) {
+        selectedSticker = null;
+        updateStickerControlsUI();
+        drawCanvas();
+        return;
+      }
+
+      // 4. If in Editor View, go back to Gallery
       if (viewEditor.classList.contains('active-view')) {
         if (btnBackToGallery) btnBackToGallery.click();
         return;
       }
       
-      // 3. If in Gallery View, go back to Customers
+      // 5. If in Gallery View, go back to Customers
       if (viewGallery.classList.contains('active-view')) {
         if (btnBackToCustomers) btnBackToCustomers.click();
         return;
@@ -1152,7 +2421,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Initial Data Fetch
+  // Initialize MS Word Color Picker, Kawaii Stickers Tray & Fetch Initial Data
+  initMSWordColorPicker();
+  initKawaiiStickersTray();
   fetchSessions();
 });
 document.addEventListener('contextmenu', event => event.preventDefault());

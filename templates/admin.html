@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photobooth Admin Panel</title>
   <link rel="icon" type="image/png" href="/static/logo.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=16">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Caveat:wght@600;700&family=Cinzel:wght@600;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Dancing+Script:wght@600;700&family=Great+Vibes&family=Montserrat:wght@600;700;800&family=Outfit:wght@400;600;700&family=Pacifico&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Sacramento&family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css?v=19">
 </head>
 <body>
   <!-- Persistent corner logo watermark -->
@@ -70,6 +73,10 @@
           <button id="btn-back-to-customers" class="back-btn">← Back</button>
           <h2 id="gallery-customer-name">Customer Name</h2>
         </div>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <button id="btn-combine-mode" class="back-btn">Combine Mode</button>
+          <button id="btn-combine-selected" class="back-btn hidden" style="background: var(--accent-green); color: white; border: none;">Combine 0 Selected</button>
+        </div>
       </div>
       <div id="gallery-grid" class="gallery-grid">
         <!-- Populated by JS -->
@@ -127,11 +134,46 @@
             </div>
 
             <div class="control-group">
-              <label class="control-label" style="font-size: 0.8rem; margin-bottom: 0.3rem; display: block;">🎀 Sticker Packs</label>
+              <label class="control-label" style="font-size: 0.8rem; margin-bottom: 0.3rem; display: block;">🎀 Preset Sticker Themes</label>
               <div class="sticker-packs-grid" id="sticker-packs-grid">
                 {% for pack_id, pack_name in sticker_packs %}
                 <button class="pack-btn{% if pack_id == 'none' %} active{% endif %}" data-pack="{{ pack_id }}">{{ pack_name }}</button>
                 {% endfor %}
+              </div>
+            </div>
+
+            <!-- Custom Kawaii Individual Stickers Tray -->
+            <div class="control-group custom-stickers-section" style="margin-top: 1.2rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <label class="control-label" style="font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.35rem; margin: 0;">
+                  <span>🐾 Kawaii Stickers</span>
+                  <span id="active-stickers-count" style="display: none; font-size: 0.65rem; background: #ff69b4; color: white; border-radius: 999px; padding: 1px 6px;">0</span>
+                </label>
+                <button type="button" id="btn-clear-all-stickers" style="display: none; font-size: 0.72rem; color: #ef4444; background: none; border: 1px solid rgba(239,68,68,0.3); border-radius: 4px; padding: 2px 6px; cursor: pointer;">Clear All</button>
+              </div>
+              <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0 0 0.6rem 0; line-height: 1.3;">
+                Click or drag any sticker onto the strip. Drag body to move, corner handles to resize, and top handle to rotate (like MS Word)!
+              </p>
+
+              <!-- Sticker Palette Tray (populated by JS) -->
+              <div class="custom-stickers-tray" id="custom-stickers-tray"></div>
+
+              <!-- Selected Sticker Action Panel -->
+              <div id="selected-sticker-controls" class="selected-sticker-controls" style="display: none;">
+                <div class="selected-sticker-header">
+                  <span style="font-size: 0.75rem; font-weight: 600; color: #ff69b4; display: flex; align-items: center; gap: 4px;">
+                    <span>✨</span> <span id="selected-sticker-name">Sticker Selected</span>
+                  </span>
+                  <span style="font-size: 0.7rem; color: var(--text-secondary);">Direct handles on photo</span>
+                </div>
+                <div class="sticker-actions-row">
+                  <button type="button" id="btn-rotate-left" class="sticker-action-btn" title="Rotate Left 15°">↺ -15°</button>
+                  <button type="button" id="btn-rotate-right" class="sticker-action-btn" title="Rotate Right 15°">↻ +15°</button>
+                  <button type="button" id="btn-scale-down" class="sticker-action-btn" title="Make Smaller">➖ Smaller</button>
+                  <button type="button" id="btn-scale-up" class="sticker-action-btn" title="Make Bigger">➕ Bigger</button>
+                  <button type="button" id="btn-flip-sticker" class="sticker-action-btn" title="Flip Horizontal">⇄ Flip</button>
+                  <button type="button" id="btn-delete-selected-sticker" class="sticker-action-btn btn-action-delete" title="Remove Sticker (or press Delete)">🗑️ Remove</button>
+                </div>
               </div>
             </div>
           </div>
@@ -172,51 +214,91 @@
           <div class="control-section">
             <h4>2. Add Text Overlay</h4>
             <div class="text-input-group">
-              <label for="overlay-text">Footer Text Message</label>
-              <input type="text" id="overlay-text" placeholder="e.g. Wedding Day 2026">
+              <label for="overlay-text">Text Message</label>
+              <input type="text" id="overlay-text" placeholder="Type text here... (e.g. Memories & Moments)">
               
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 0.5rem;">
+              <div style="display: grid; grid-template-columns: 1.15fr 0.95fr; gap: 0.75rem; margin-top: 0.6rem;">
                 <div>
-                  <label for="font-family" style="font-size: 0.75rem;">Font Family</label>
-                  <select id="font-family" style="width: 100%; padding: 0.5rem; font-size: 0.8rem;">
-                    <!-- Standard Fonts -->
-                    <option value="Outfit">Outfit</option>
-                    <option value="Inter">Inter</option>
-                    <option value="Courier New">Typewriter (Courier)</option>
-                    <!-- Instagram-style Fonts -->
-                    <option value="Montserrat">Modern (Montserrat)</option>
-                    <option value="Anton">Strong (Anton)</option>
-                    <option value="Pacifico">Neon (Pacifico)</option>
-                    <option value="Yellowtail">Script (Yellowtail)</option>
-                    <option value="Impact">Meme (Impact)</option>
+                  <label for="font-family" style="font-size: 0.75rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Font Family</label>
+                  <select id="font-family" style="width: 100%; padding: 0.45rem 0.35rem; font-size: 0.78rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface);">
+                    <!-- Default Typewriter -->
+                    <option value="Courier Prime" selected>⌨️ Typewriter (Default)</option>
+                    <option value="Special Elite">📜 Vintage Typewriter</option>
+                    
+                    <!-- Signature & Handwriting Fonts -->
+                    <option value="Brittany">✒️ Brittany Signature</option>
+                    <option value="Great Vibes">🖋️ Luxury Signature (Great Vibes)</option>
+                    <option value="Dancing Script">✍️ Casual Signature (Dancing Script)</option>
+                    <option value="Alex Brush">🪶 Elegant Script (Alex Brush)</option>
+                    <option value="Sacramento">✨ Fine Monoline (Sacramento)</option>
+                    
+                    <!-- Coding / Monospace Aesthetic -->
+                    <option value="Cascadia Code">💻 Cascadia Code</option>
+                    
+                    <!-- Aesthetic Serifs & Displays -->
+                    <option value="Playfair Display">📖 Editorial Serif (Playfair)</option>
+                    <option value="Cinzel">🏛️ Classical Roman (Cinzel)</option>
+                    <option value="Caveat">📝 Aesthetic Handwritten (Caveat)</option>
+                    <option value="Pacifico">🌴 Retro Script (Pacifico)</option>
+                    <option value="Montserrat">⭐ Modern Bold (Montserrat)</option>
+                    <option value="Outfit">✨ Clean Aesthetic (Outfit)</option>
                   </select>
                 </div>
+
                 <div>
-                  <label for="font-color" style="font-size: 0.75rem;">Text Color</label>
-                  <select id="font-color" style="width: 100%; padding: 0.5rem; font-size: 0.8rem;">
-                    <option value="#000000">Black</option>
-                    <option value="#ffffff">White</option>
-                    <option value="#333333">Dark Grey</option>
-                    <option value="#ff007f">Neon Pink</option>
-                    <option value="#00f0ff">Electric Cyan</option>
-                  </select>
+                  <label style="font-size: 0.75rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Font Color</label>
+                  <!-- MS Word Font Color Picker Dropdown Component -->
+                  <div class="msword-color-picker-container" id="msword-color-picker-container">
+                    <button type="button" id="btn-msword-color-toggle" class="msword-color-toggle-btn" title="MS Word Font Color">
+                      <div class="msword-a-wrap">
+                        <span class="msword-a-letter">A</span>
+                        <span class="msword-color-bar" id="msword-active-color-bar" style="background-color: #000000;"></span>
+                      </div>
+                      <span class="msword-color-label" id="msword-color-name">Black</span>
+                      <span class="msword-arrow">▼</span>
+                    </button>
+
+                    <!-- MS Word Palette Popup -->
+                    <div id="msword-palette-dropdown" class="msword-palette-dropdown" style="display: none;">
+                      <div class="msword-section-title">Theme Colors</div>
+                      <div class="msword-theme-wrap">
+                        <div class="msword-theme-top-row" id="msword-theme-top-row"></div>
+                        <div class="msword-theme-shades-grid" id="msword-theme-shades-grid"></div>
+                      </div>
+
+                      <div class="msword-divider"></div>
+
+                      <div class="msword-section-title">Standard Colors</div>
+                      <div class="msword-standard-grid" id="msword-standard-grid"></div>
+
+                      <div class="msword-divider"></div>
+
+                      <label class="msword-more-colors-btn" title="Choose any custom color">
+                        <span class="msword-wheel-icon">🎨</span>
+                        <span><u>M</u>ore Colors...</span>
+                        <input type="color" id="msword-custom-color-input" value="#000000" style="opacity: 0; width: 0; height: 0; position: absolute; pointer-events: none;" />
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
               
               <!-- Text Styling Options -->
               <div style="margin-top: 0.8rem;">
                 <div class="slider-group">
-                  <label><span>Aa Font Size</span> <span id="val-font-size">60px</span></label>
-                  <input type="range" id="slider-font-size" min="30" max="150" value="60">
+                  <label><span>Aa Font Size</span> <span id="val-font-size">90px</span></label>
+                  <input type="range" id="slider-font-size" min="24" max="220" value="90">
                 </div>
                 <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                  <button id="btn-text-bold" class="btn text-style-btn" style="flex: 1; font-weight: bold; padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--border); background: var(--bg-primary);">B</button>
+                  <button id="btn-text-bold" class="btn text-style-btn active" style="flex: 1; font-weight: bold; padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--border); background: var(--bg-primary);">B</button>
                   <button id="btn-text-italic" class="btn text-style-btn" style="flex: 1; font-style: italic; padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--border); background: var(--bg-primary);">I</button>
                   <button id="btn-text-underline" class="btn text-style-btn" style="flex: 1; text-decoration: underline; padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--border); background: var(--bg-primary);">U</button>
                 </div>
               </div>
               
-              <p style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.8rem;">💡 Tip: You can drag the text anywhere on the canvas!</p>
+              <p style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.8rem; line-height: 1.3;">
+                💡 <strong>MS Word Style:</strong> Drag text to move, corner handles to resize, and top handle to rotate!
+              </p>
               <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
                 <button id="btn-apply-text" class="btn" style="flex: 1; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); font-size: 0.95rem; padding: 0.6rem;">Apply Text</button>
                 <button id="btn-clear-text" class="btn" style="flex: 1; background: #fff0f0; border: 1px solid #ffcccc; color: #cc0000; font-size: 0.95rem; padding: 0.6rem;">Clear Text</button>
@@ -234,6 +316,17 @@
       </div>
     </div>
   </main>
+
+  <!-- Combine Preview Modal -->
+  <div id="combine-preview-modal" class="preview-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; opacity: 0; transition: opacity 0.2s ease;">
+    <div id="combine-preview-image-wrap" class="preview-image-wrap">
+      <img id="combine-preview-modal-img" src="" style="max-height: 80vh; max-width: 90vw; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: white;">
+    </div>
+    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+      <button id="btn-combine-preview-close" class="btn btn-secondary">Close</button>
+      <button id="btn-combine-preview-download" class="btn btn-primary">Download Combined JPG</button>
+    </div>
+  </div>
 
   <!-- Preview Modal -->
   <div id="preview-modal" class="preview-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; opacity: 0; transition: opacity 0.2s ease;">
@@ -258,6 +351,6 @@
     </form>
   </div>
 
-  <script src="/static/js/admin.js?v=16"></script>
+  <script src="/static/js/admin.js?v=22"></script>
 </body>
 </html>
