@@ -2,7 +2,6 @@
 *.png
 !static/stickers/**/*.png
 !static/stickers/**/*.gif
-!static/logo.png
 .DS_Store
 *.pyc
 .flask_secret
