@@ -730,6 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   const kioskCollageCanvas = document.getElementById('kioskCollageCanvas');
   const kioskCtx = kioskCollageCanvas ? kioskCollageCanvas.getContext('2d') : null;
+if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQuality = 'high'; }
   const COLLAGE_WIDTH = 1182;
   const COLLAGE_HEIGHT = 3700;
 
@@ -2676,6 +2677,8 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.width = outputWidth;
     canvas.height = outputHeight;
     const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);

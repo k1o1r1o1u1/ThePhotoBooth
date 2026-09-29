@@ -648,6 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function addOriginalGalleryItem(imgUrl, sess, customerData, photoNumber) {
+    previewItems.push({ imgUrl, sess, customerData, isEdited: false });
     const item = document.createElement('div');
     item.className = 'gallery-item gallery-original-item';
     item.style.position = 'relative';
@@ -732,8 +733,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function navigatePreview(direction) {
-    if (!previewItems.length || currentPreviewIndex < 0) return;
-    const nextIndex = (currentPreviewIndex + direction + previewItems.length) % previewItems.length;
+    if (!previewItems.length) return;
+    const currentIndex = currentPreviewIndex < 0 ? 0 : currentPreviewIndex;
+    const nextIndex = (currentIndex + direction + previewItems.length) % previewItems.length;
     const item = previewItems[nextIndex];
     openPreviewModal(item.imgUrl, item.sess, item.customerData, item.isEdited);
   }
@@ -748,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (event.target === previewModal) closePreviewModal();
   });
   document.addEventListener('keydown', event => {
-    if (previewModal?.style.display !== 'flex') return;
+    if (!previewModal || previewModal.style.display === 'none' || previewModal.style.display === '') return;
     if (event.key === 'ArrowLeft') { event.preventDefault(); navigatePreview(-1); }
     else if (event.key === 'ArrowRight') { event.preventDefault(); navigatePreview(1); }
     else if (event.key === 'Escape') { event.preventDefault(); closePreviewModal(); }

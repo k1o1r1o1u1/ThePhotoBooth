@@ -1022,10 +1022,10 @@ h1 {
 .token-stat strong { color:var(--accent-green); font-size:1.45rem; }
 .token-form { display:grid; grid-template-columns:1fr 1.5fr 1.3fr 1.5fr .7fr .7fr .8fr 1fr auto; gap:.65rem; align-items:center; padding:1rem; border:1px solid var(--border); border-radius:12px; background:var(--bg-secondary); }
 .token-form input,.token-form select { min-width:0; padding:.65rem; border:1px solid var(--border); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); }
-.token-table-wrap { overflow:auto; border:1px solid var(--border); border-radius:12px; background:var(--bg-secondary); }
+.token-table-wrap { flex: 1; min-height: 0; overflow-y: auto; border:1px solid var(--border); border-radius:12px; background:var(--bg-secondary); }
 .token-table { width:100%; border-collapse:collapse; min-width:1200px; }
 .token-table th,.token-table td { padding:.8rem; text-align:left; border-bottom:1px solid var(--border); }
-.token-table th { color:var(--accent-green); font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; }
+.token-table th { color:var(--accent-green); font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; position: sticky; top: 0; background: var(--bg-secondary); z-index: 10; box-shadow: 0 1px 0 var(--border); }
 .token-check { white-space:nowrap; cursor:pointer; }
 .token-delete-btn { border:1px solid #e06a89; background:#fff6f8; color:#a31545; border-radius:7px; padding:.4rem .65rem; cursor:pointer; font-weight:700; }
 .token-delete-btn:hover { background:var(--accent-coral); color:#fff; border-color:var(--accent-coral); }

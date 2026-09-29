@@ -17,3 +17,5 @@ dist
 test_copy
 process_stickers.py
 cleanup_stickers.py
+for_hostinger/
+photobooth_hostinger.zip
