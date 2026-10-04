@@ -61,6 +61,7 @@ if not os.path.exists(SETTINGS_PATH):
 # Serve bundled web assets explicitly so uploaded photos can persist beside EXE.
 app = Flask(__name__, static_folder=None)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 # Secure secret key for session management – persists across restarts
 # so that existing client session cookies remain valid.

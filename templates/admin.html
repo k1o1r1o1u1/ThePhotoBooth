@@ -8,7 +8,70 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Caveat:wght@600;700&family=Cinzel:wght@600;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Dancing+Script:wght@600;700&family=Great+Vibes&family=Montserrat:wght@600;700;800&family=Outfit:wght@400;600;700&family=Pacifico&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Sacramento&family=Special+Elite&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=19">
+  <link rel="stylesheet" href="/static/css/style.css?v=25">
+  <style>
+    /* Force layout for Tokens View - bypassing cache */
+    @media (min-width: 1025px) and (min-height: 700px) {
+      body:has(#view-tokens.active-view) { overflow: hidden !important; }
+      .admin-fullscreen:has(#view-tokens.active-view) { 
+        overflow: hidden !important; 
+      }
+      #view-tokens.active-view {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        overflow: hidden !important;
+        padding: 2rem !important;
+        box-sizing: border-box !important;
+        min-height: 0 !important;
+      }
+      #view-tokens > .admin-header-bar,
+      #view-tokens > #token-dashboard,
+      #view-tokens > #token-form,
+      #view-tokens > #token-search {
+        flex: 0 0 auto !important;
+      }
+      #view-tokens .token-table-wrap {
+        flex: 1 1 0 !important;
+        min-height: 0 !important;
+        height: 0 !important;
+        overflow-y: auto !important;
+        position: relative !important;
+      }
+      .token-table th {
+        position: sticky !important;
+        top: 0 !important;
+        background: var(--bg-secondary) !important;
+        z-index: 10 !important;
+        box-shadow: 0 1px 0 var(--border) !important;
+      }
+    }
+    
+    @media (max-width: 1024px), (max-height: 699px) {
+      html, body { 
+        overflow: auto !important; 
+        height: auto !important; 
+      }
+      .admin-fullscreen { 
+        display: block !important;
+        height: auto !important; 
+        min-height: 100vh; 
+        overflow: visible !important; 
+      }
+      #view-tokens.active-view {
+        padding: 1rem !important;
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+      }
+      #view-tokens .token-table-wrap {
+        flex: none !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+    }
+  </style>
 </head>
 <body>
   <!-- Persistent corner logo watermark -->
@@ -315,6 +378,7 @@
         </div>
       </div>
     </div>
+    <button id="btn-go-top" class="go-to-top-btn" title="Go to Top">↑</button>
   </main>
 
   <!-- Combine Preview Modal -->

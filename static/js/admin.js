@@ -2429,3 +2429,37 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchSessions();
 });
 document.addEventListener('contextmenu', event => event.preventDefault());
+
+  // Go to Top Button
+  const btnGoTop = document.getElementById('btn-go-top');
+  if (btnGoTop) {
+    function checkScroll() {
+      const tokenTableWrap = document.querySelector('.token-table-wrap');
+      const activeView = document.querySelector('.view-container.active-view');
+      let shouldShow = window.scrollY > 300 || document.documentElement.scrollTop > 300;
+      
+      if (!shouldShow && activeView && activeView.id === 'view-tokens' && tokenTableWrap) {
+        shouldShow = tokenTableWrap.scrollTop > 300;
+      }
+      if (!shouldShow && activeView) {
+        shouldShow = activeView.scrollTop > 300;
+      }
+      
+      if (shouldShow) btnGoTop.classList.add('visible');
+      else btnGoTop.classList.remove('visible');
+    }
+    document.addEventListener('scroll', checkScroll, true);
+    window.addEventListener('scroll', checkScroll);
+    
+    btnGoTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const tokenTableWrap = document.querySelector('.token-table-wrap');
+      const activeView = document.querySelector('.view-container.active-view');
+      if (activeView && activeView.id === 'view-tokens' && tokenTableWrap) {
+        tokenTableWrap.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      if (activeView) {
+        activeView.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  }
