@@ -1262,15 +1262,22 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
   }
 
   // Save State Watcher
-  function updateSaveCustomizationState(isHistoryRestore = false) {
+  function updateSaveCustomizationState(isHistoryRestore = false, skipHistory = false) {
     if (!btnSaveCustomization) return;
-    const hasUnsavedFrameChange = selectedFrameColor !== savedFrameColor;
-    const hasActiveStickers = kioskCustomStickers.length > 0;
-    const hasActiveText = kioskTextOverlay.trim().length > 0;
-    const isUnsaved = hasUnsavedFrameChange || hasActiveStickers || hasActiveText || hasUnsavedCustomization;
+    
+    let isUnsaved = hasUnsavedCustomization;
+    if (typeof window.isKioskEdited === 'function') {
+      isUnsaved = isUnsaved || window.isKioskEdited();
+    } else {
+      const hasUnsavedFrameChange = selectedFrameColor !== savedFrameColor;
+      const hasActiveStickers = kioskCustomStickers.length > 0;
+      const hasActiveText = kioskTextOverlay.trim().length > 0;
+      isUnsaved = hasUnsavedFrameChange || hasActiveStickers || hasActiveText || hasUnsavedCustomization;
+    }
+    
     btnSaveCustomization.disabled = !isUnsaved;
     btnSaveCustomization.innerHTML = isUnsaved ? 'Save Your Edits' : 'Saved ✓';
-    if (!isHistoryRestore && typeof debouncedPushHistory === 'function') {
+    if (!isHistoryRestore && !skipHistory && typeof debouncedPushHistory === 'function') {
       debouncedPushHistory();
     }
   }
@@ -2272,6 +2279,9 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
   // Save Customization Button Listener
   // =========================================================================
   async function autoSaveKioskCustomization({ keepDirty = false, force = false } = {}) {
+    if (typeof window.isKioskEdited === 'function' && !keepDirty) {
+      if (!window.isKioskEdited()) return;
+    }
     if (!hasUnsavedCustomization || !btnSaveCustomization || (!force && btnSaveCustomization.disabled)) return;
     btnSaveCustomization.disabled = true;
     const oldText = btnSaveCustomization.textContent;
@@ -2310,6 +2320,7 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
       } else {
         savedFrameColor = selectedFrameColor;
         hasUnsavedCustomization = false;
+        if (typeof window.setKioskSaved === 'function') window.setKioskSaved();
         btnSaveCustomization.textContent = 'Saved ✓';
       }
       if (imgCollagePreview && result.collage_edited_url) {
@@ -2321,7 +2332,7 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
       btnSaveCustomization.disabled = false;
     } finally {
       setTimeout(() => {
-        updateSaveCustomizationState();
+        updateSaveCustomizationState(false, true);
       }, 1200);
     }
   }
@@ -2372,6 +2383,7 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
       kioskTextOverlay = '';
       kioskIsTextSelected = false;
       if (kioskOverlayTextInput) kioskOverlayTextInput.value = '';
+      if (typeof window.resetKioskHistory === 'function') window.resetKioskHistory();
       updateKioskStickerControlsUI();
 
       colorDots.forEach(d => {
@@ -2391,7 +2403,7 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
         if (image.previewUrl) URL.revokeObjectURL(image.previewUrl);
       });
       capturedImages = [];
-      updateSaveCustomizationState();
+      updateSaveCustomizationState(false, true);
 
       showScreen(screenReview);
       // Persist the default, full-resolution strip immediately. The user can
@@ -2822,7 +2834,7 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
 
         // Load photos into canvas
         await loadKioskPhotosFromUrls(targetFiles);
-        updateSaveCustomizationState();
+        updateSaveCustomizationState(false, true);
       } else {
         alert('You can only edit collages, not individual photos or animations.');
       }
@@ -2913,6 +2925,24 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
   let editHistoryIndex = -1;
   let isRestoringHistory = false;
   let historyDebounceTimer = null;
+  let lastSavedHistoryIndex = 0;
+
+  window.resetKioskHistory = function() {
+    editHistory = [];
+    editHistoryIndex = -1;
+    lastSavedHistoryIndex = 0;
+  };
+
+  window.isKioskEdited = function() {
+    if (editHistory.length > 0) {
+      return editHistoryIndex !== lastSavedHistoryIndex;
+    }
+    return false;
+  };
+
+  window.setKioskSaved = function() {
+    lastSavedHistoryIndex = editHistoryIndex;
+  };
 
   function cloneCurrentKioskState() {
     return {
