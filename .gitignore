@@ -1,5 +1,7 @@
 *.gif
 *.png
+!static/korea_bg.png
+!static/korea_bg_preview.png
 !static/stickers/**/*.png
 !static/stickers/**/*.gif
 .DS_Store
