@@ -573,7 +573,7 @@ def upload_photos():
                 img_base64 = image_source.split(',', 1)[-1]
                 img_bytes = base64.b64decode(img_base64)
                 img = Image.open(BytesIO(img_bytes)).convert('RGB')
-                img.save(filepath, 'JPEG', quality=95, subsampling=0)
+                img.save(filepath, 'JPEG', quality=100, subsampling=0)
             saved_files.append(f"/static/photos/{session_dir}/{filename}")
         except Exception as e:
             return jsonify({'error': f"Failed to process image {idx + 1}: {str(e)}"}), 500
@@ -982,7 +982,7 @@ def save_edit():
         edit_ts = str(time_mod.time_ns())
         filename = f"collage_edited_{timestamp}_{edit_ts}.jpg" if timestamp else f"collage_edited_{edit_ts}.jpg"
         filepath = os.path.join(session_path, filename)
-        img.save(filepath, 'JPEG', quality=95)
+        img.save(filepath, 'JPEG', quality=100, subsampling=0)
         return jsonify({
             'status': 'success',
             'collage_edited_url': f"/static/photos/{session_dir}/{filename}"
@@ -1032,7 +1032,7 @@ def customer_save_edit():
         edit_ts = str(time_mod.time_ns())
         filename = f"collage_edited_{timestamp}_{edit_ts}.jpg" if timestamp else f"collage_edited_{edit_ts}.jpg"
         filepath = os.path.join(session_path, filename)
-        img.save(filepath, 'JPEG', quality=95)
+        img.save(filepath, 'JPEG', quality=100, subsampling=0)
         return jsonify({
             'status': 'success',
             'collage_edited_url': f"/static/photos/{session_dir}/{filename}"

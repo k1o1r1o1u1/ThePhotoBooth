@@ -2709,6 +2709,7 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
+    ctx.filter = 'brightness(1.05) contrast(1.05) saturate(1.05)';
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(
@@ -2716,7 +2717,9 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
       cropX, cropY, cropWidth, cropHeight,
       0, 0, canvas.width, canvas.height
     );
-    return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+    // Reset filter so it doesn't affect subsequent draws if canvas is reused
+    ctx.filter = 'none';
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
   }
 
   // =========================================================================
