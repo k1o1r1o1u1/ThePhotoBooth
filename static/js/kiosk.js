@@ -1364,7 +1364,7 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
       btn.className = 'kiosk-sticker-item-btn';
       btn.title = `Add ${item.name} to photostrip`;
       btn.innerHTML = `
-        <img src="/static/stickers/kawaii/${item.file}" alt="${item.name}">
+        <img src="${item.url || '/static/stickers/kawaii/' + item.file}" alt="${item.name}">
         <span>${item.name}</span>
       `;
       btn.addEventListener('click', (e) => {
@@ -1373,6 +1373,35 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
       });
       tray.appendChild(btn);
     });
+
+    const koreaTray = document.getElementById('kiosk-korea-stickers-tray');
+    if (koreaTray) {
+      try {
+        const koreaRes = await fetch('/api/stickers/korea');
+        if (koreaRes.ok) {
+          const koreaData = await koreaRes.json();
+          const koreaStickersList = koreaData.stickers || [];
+          koreaTray.innerHTML = '';
+          koreaStickersList.forEach(item => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'kiosk-sticker-item-btn';
+            btn.title = `Add ${item.name} to photostrip`;
+            btn.innerHTML = `
+              <img src="${item.url}" alt="${item.name}">
+              <span>${item.name}</span>
+            `;
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              addKioskSticker(item);
+            });
+            koreaTray.appendChild(btn);
+          });
+        }
+      } catch (err) {
+        console.warn('Error loading korea stickers:', err);
+      }
+    }
   }
 
   function addKioskSticker(item, targetX, targetY) {

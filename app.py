@@ -700,6 +700,25 @@ def get_available_stickers():
                 })
     return jsonify({'stickers': stickers})
 
+@app.route('/api/stickers/korea', methods=['GET'])
+def get_korea_stickers():
+    korea_dir = os.path.join(app.root_path, 'static', 'stickers', 'korea')
+    stickers = []
+    if os.path.exists(korea_dir):
+        for f in sorted(os.listdir(korea_dir)):
+            if f.lower().endswith('.png'):
+                clean_name = os.path.splitext(f)[0]
+                if clean_name.startswith('korea_'):
+                    clean_name = clean_name[6:]
+                name = clean_name.replace('_', ' ').replace('-', ' ').title()
+                stickers.append({
+                    'id': f,
+                    'file': f,
+                    'name': name,
+                    'url': f'/static/stickers/korea/{f}'
+                })
+    return jsonify({'stickers': stickers})
+
 
 @app.route('/api/session/edit_existing', methods=['POST'])
 def edit_existing():
