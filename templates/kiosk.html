@@ -1,504 +1,549 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Photobooth</title>
-    <link rel="icon" type="image/png" href="/static/logo.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Caveat:wght@600;700&family=Cinzel:wght@600;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Dancing+Script:wght@600;700&family=Great+Vibes&family=Montserrat:wght@600;700;800&family=Outfit:wght@400;600;700&family=Pacifico&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Sacramento&family=Special+Elite&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/css/kiosk.css?v=23" />
-  </head>
-  <body>
-    <!-- Session Timer (top-right, hidden by default) -->
-    <div id="session-timer" class="session-timer hidden">
-      <span id="timer-display">3:00</span>
-    </div>
-    <button id="btn-end-session" class="end-session-btn hidden" type="button">
-      End Session
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photobooth</title>
+  <link rel="icon" type="image/png" href="/static/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Caveat:wght@600;700&family=Cinzel:wght@600;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Dancing+Script:wght@600;700&family=Great+Vibes&family=Montserrat:wght@600;700;800&family=Outfit:wght@400;600;700&family=Pacifico&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Sacramento&family=Special+Elite&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/kiosk.css?v=24" />
+</head>
+
+<body>
+  <!-- Session Timer (top-right, hidden by default) -->
+  <div id="session-timer" class="session-timer hidden">
+    <span id="timer-display">3:00</span>
+  </div>
+  <button id="btn-end-session" class="end-session-btn hidden" type="button">
+    End Session
+  </button>
+
+  <div class="top-left-controls">
+    <div id="session-user" class="session-user hidden"></div>
+    <button id="btn-goto-gallery" class="btn-goto-gallery-corner hidden" tabindex="0">
+      <span class="gallery-back-arrow">← </span>Gallery <kbd class="key-badge">G</kbd>
     </button>
+  </div>
 
-    <div class="top-left-controls">
-      <div id="session-user" class="session-user hidden"></div>
-      <button id="btn-goto-gallery" class="btn-goto-gallery-corner hidden" tabindex="0">
-        <span class="gallery-back-arrow">← </span>Gallery <kbd class="key-badge">G</kbd>
-      </button>
+
+
+  <!-- SCREEN 1: WELCOME / NAME ENTRY -->
+  <div id="screen-login" class="screen">
+    <div class="welcome-logo">
+      <img src="/static/logo.png" alt="Photobooth Logo" class="welcome-logo-img" />
+    </div>
+    <h1 class="welcome-title">Welcome!</h1>
+    <p class="welcome-sub">Enter your token number to get started</p>
+
+    <div class="name-input-wrap">
+      <input type="text" id="customer-name" placeholder="Token number" autocomplete="off" spellcheck="false" />
     </div>
 
-    <!-- Persistent logo watermark -->
-    <div class="corner-logo">
-      <img src="/static/logo.png" alt="Logo" />
-    </div>
-    <div class="site-credit">© krish_korou</div>
+    <button id="btn-login" class="big-btn btn-go">
+      Let's Go! &nbsp;→ <kbd class="key-badge">Enter ↵</kbd>
+    </button>
+  </div>
 
-    <!-- SCREEN 1: WELCOME / NAME ENTRY -->
-    <div id="screen-login" class="screen">
-      <div class="welcome-logo">
-        <img
-          src="/static/logo.png"
-          alt="Photobooth Logo"
-          class="welcome-logo-img"
-        />
-      </div>
-      <h1 class="welcome-title">Welcome!</h1>
-      <p class="welcome-sub">Enter your token number to get started</p>
-
-      <div class="name-input-wrap">
-        <input
-          type="text"
-          id="customer-name"
-          placeholder="Token number"
-          autocomplete="off"
-          spellcheck="false"
-        />
+  <!-- SCREEN 2: DASHBOARD / DISCLAIMER -->
+  <div id="screen-dashboard" class="screen hidden screen-dashboard">
+    <div class="dashboard-body">
+      <div class="dashboard-hero">
+        <img src="/static/logo.png" alt="Photobooth Logo" class="dashboard-logo" />
       </div>
 
-      <button id="btn-login" class="big-btn btn-go">
-        Let's Go! &nbsp;→ <kbd class="key-badge">Enter ↵</kbd>
+      <h1 class="dashboard-greeting">
+        <span class="greeting-sparkle"></span> Hi, <span id="dashboard-name">Friend</span>! <span
+          class="greeting-sparkle">👋</span>
+      </h1>
+
+      <div class="dashboard-sub-header">
+        <h2 class="dashboard-ready-text">READY FOR YOUR <span class="text-pink">PHOTO?</span></h2>
+        <p class="dashboard-ready-subtext">Strike your best pose and have fun!</p>
+      </div>
+
+      <div class="dashboard-info-cards">
+        <div class="info-card">
+          <div class="info-icon">📸</div>
+          <div class="info-title">4 PHOTOS</div>
+          <div class="info-sub">In a row</div>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">⏱️</div>
+          <div class="info-title">5 SECONDS</div>
+          <div class="info-sub">Each shot</div>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">⛔</div>
+          <div class="info-title">NO RETAKES</div>
+          <div class="info-sub">So give your best!</div>
+        </div>
+      </div>
+
+      <button id="btn-new-session" class="big-btn btn-go dashboard-start-btn">
+        Start Photobooth →
       </button>
+
+      <div class="session-warning-pill">
+        ⏱ Your <span id="session-duration-label">4-minute</span> session starts after your first photo.
+      </div>
+
+      <p class="dashboard-bottom-hint">
+        <kbd class="key-badge">Enter ↵</kbd> to start
+      </p>
     </div>
 
-    <!-- SCREEN 2: DASHBOARD / DISCLAIMER -->
-    <div id="screen-dashboard" class="screen hidden screen-dashboard">
-      <div class="dashboard-body">
-        <div class="dashboard-hero">
-          <img
-            src="/static/logo.png"
-            alt="Photobooth Logo"
-            class="dashboard-logo"
-          />
+    <button id="btn-logout" class="small-btn btn-logout">
+      Sign Out <kbd class="key-badge key-badge-sm">Esc</kbd>
+    </button>
+  </div>
+
+  <!-- SCREEN 4: CAPTURE -->
+  <div id="screen-capture" class="screen hidden screen-capture-layout">
+    <div class="capture-top">
+      <h2 id="capture-status" class="capture-status-text"><span class="greeting-sparkle">✨</span> Get Ready! <span
+          class="greeting-sparkle">✨</span></h2>
+      <p id="capture-instruction" class="capture-instruction-text">
+        Press the button or Space to start!
+      </p>
+    </div>
+
+    <div class="capture-main-area">
+      <div class="camera-container" id="camera-container-box">
+        <video id="webcam" autoplay playsinline></video>
+        <div id="camera-overlay-effect" class="camera-overlay"></div>
+        <div id="flash" class="flash-effect"></div>
+        <div id="countdown" class="countdown-overlay hidden">
+          <div id="countdown-num" class="countdown-number">3</div>
+        </div>
+      </div>
+
+      <div class="capture-side-panel">
+        <div class="capture-side-logo-wrap">
+          <img src="/static/logo.png" alt="Logo" class="capture-side-logo" />
         </div>
 
-        <h1 class="dashboard-greeting">
-          Hi, <span id="dashboard-name">Friend</span>!
-        </h1>
-
-        <div class="disclaimer-card dashboard-instructions">
-          <p class="disclaimer-text">
-            You have <strong>5 seconds</strong> for each shot –
-            <em>no retakes!</em><br />
-            This photobooth captures <strong>4 pictures</strong> in a row, so
-            strike your best pose and have fun!
-          </p>
-          <p class="disclaimer-text disclaimer-text-secondary">
-            After the session, you can go to our personnel for photos and share
-            the fun!
-          </p>
-          <p class="disclaimer-note">
-            ⏱ You have
-            <strong id="session-duration-label">4 minutes</strong> for the
-            photos. The timer will start after taking your first photo.
-          </p>
-        </div>
-
-        <button id="btn-new-session" class="big-btn btn-go dashboard-start-btn">
-          Start Photobooth <kbd class="key-badge">Enter ↵</kbd>
-        </button>
-      </div>
-
-      <button id="btn-logout" class="small-btn btn-logout">
-        Sign Out <kbd class="key-badge key-badge-sm">Esc</kbd>
-      </button>
-    </div>
-
-    <!-- SCREEN 4: CAPTURE -->
-    <div id="screen-capture" class="screen hidden screen-capture-layout">
-      <div class="capture-top">
-        <h2 id="capture-status" class="capture-status-text">Get Ready!</h2>
-        <p id="capture-instruction" class="capture-instruction-text">
-          Press the big button when you're ready!
-        </p>
-      </div>
-
-      <div class="capture-main-area">
-        <div class="camera-container" id="camera-container-box">
-          <video id="webcam" autoplay playsinline></video>
-          <div id="camera-overlay-effect" class="camera-overlay"></div>
-          <div id="flash" class="flash-effect"></div>
-          <div id="countdown" class="countdown-overlay hidden">
-            <div id="countdown-num" class="countdown-number">3</div>
+        <div class="capture-session-info">
+          <div class="session-info-left">
+            <span class="session-info-title">Photo Session</span>
+            <div class="session-progress-dots" id="capture-progress-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+          <div class="session-info-right">
+            <span class="session-info-count" id="capture-progress-count">0 / 4</span>
+            <span class="session-info-label">photos</span>
           </div>
         </div>
 
-        <div class="capture-side-panel">
-          <div class="capture-side-logo-wrap">
-            <img src="/static/logo.png" alt="Logo" class="capture-side-logo" />
-          </div>
+        <div class="thumbnails-container" id="thumbs-bar"></div>
 
-          <div class="thumbnails-container" id="thumbs-bar"></div>
+        <div class="capture-btn-wrapper">
+          <button id="btn-capture" class="capture-trigger" title="Take Photo (Space)">
+            <span class="capture-trigger-inner"></span>
+          </button>
+          <div class="capture-btn-label">START</div>
+          <p class="capture-key-hint">
+            Press <kbd class="key-badge">Space</kbd> or
+            <kbd class="key-badge">Enter</kbd> or click
+          </p>
+        </div>
 
-          <div class="capture-btn-wrapper">
-            <button
-              id="btn-capture"
-              class="capture-trigger"
-              title="Take Photo (Space)"
-            >
-              <span class="capture-trigger-inner">📷</span>
-            </button>
-            <p class="capture-key-hint">
-              Press <kbd class="key-badge">Space</kbd> or
-              <kbd class="key-badge">Enter</kbd> or click
-            </p>
-          </div>
+        <div class="capture-bottom-actions">
+          <button id="btn-capture-gallery" class="small-btn btn-secondary capture-bottom-btn">
+            <span class="gallery-icon"></span> Gallery <kbd class="key-badge key-badge-sm">G</kbd>
+          </button>
 
-          <div style="margin: 1rem 0; text-align: center;">
-            <button id="btn-capture-gallery" class="small-btn btn-secondary" style="width: 100%; padding: 0.8rem; font-size: 1rem;">
-              Gallery <kbd class="key-badge key-badge-sm">G</kbd>
-            </button>
-          </div>
-
-          <button
-            id="btn-capture-exit"
-            class="small-btn btn-back capture-exit-btn"
-          >
+          <button id="btn-capture-exit" class="small-btn btn-danger capture-bottom-btn capture-exit-btn">
             ✕ Cancel <kbd class="key-badge key-badge-sm">Esc</kbd>
           </button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- SCREEN 5: REVIEW & CUSTOMIZATION STUDIO -->
-    <div id="screen-review" class="screen hidden screen-review-layout">
-      <!-- Side Logo (Left side) -->
-      <img src="/static/logo.png" alt="Logo" class="review-side-logo" />
-      
-      <div class="review-compact">
-        <!-- Left: Interactive Canvas Photostrip -->
-        <div class="review-left">
-          <div class="collage-display-fit" id="kiosk-canvas-container">
-            <canvas id="kioskCollageCanvas" width="1182" height="3700"></canvas>
-            <img id="collage-preview" src="" alt="Your Photostrip" style="display: none;" />
+  <!-- SCREEN 5: REVIEW & CUSTOMIZATION STUDIO -->
+  <div id="screen-review" class="screen hidden screen-review-layout">
+    <!-- Side Logo (Left side) -->
+    <img src="/static/logo.png" alt="Logo" class="review-side-logo" />
+
+    <div class="review-compact">
+      <!-- Left: Interactive Canvas Photostrip -->
+      <div class="review-left">
+        <div class="collage-display-fit" id="kiosk-canvas-container">
+          <canvas id="kioskCollageCanvas" width="1182" height="3700"></canvas>
+          <img id="collage-preview" src="" alt="Your Photostrip" style="display: none;" />
+        </div>
+      </div>
+
+      <!-- Right: Studio Controls (Zero scroll, tabbed layout) -->
+      <div class="review-right">
+        <!-- Header Bar: Mini Logo + Title + Save Button -->
+        <div class="kiosk-studio-header">
+          <div class="kiosk-brand-title">
+            <img src="/static/logo.png" alt="Logo" class="review-mini-logo" />
+            <div>
+              <h1 class="welcome-title studio-main-title">Customize Photostrip</h1>
+              <span class="studio-subtext">Add stickers, text & custom frames</span>
+            </div>
+          </div>
+          <!-- Undo/Redo controls -->
+          <div style="display: flex; gap: 0.5rem; margin-left: auto;">
+            <button type="button" id="btn-kiosk-undo" class="small-btn btn-secondary"
+              style="padding: 0.2rem 0.8rem; font-size: 1.4rem; min-width: auto; height: 36px; display: flex; align-items: center; justify-content: center; line-height: 1; border-radius: 12px; box-shadow: none;"
+              title="Undo" disabled>↩</button>
+            <button type="button" id="btn-kiosk-redo" class="small-btn btn-secondary"
+              style="padding: 0.2rem 0.8rem; font-size: 1.4rem; min-width: auto; height: 36px; display: flex; align-items: center; justify-content: center; line-height: 1; border-radius: 12px; box-shadow: none;"
+              title="Redo" disabled>↪</button>
           </div>
         </div>
 
-        <!-- Right: Studio Controls (Zero scroll, tabbed layout) -->
-        <div class="review-right">
-          <!-- Header Bar: Mini Logo + Title + Save Button -->
-          <div class="kiosk-studio-header">
-            <div class="kiosk-brand-title">
-              <img src="/static/logo.png" alt="Logo" class="review-mini-logo" />
-              <div>
-                <h1 class="welcome-title studio-main-title">Customize Photostrip</h1>
-                <span class="studio-subtext">Add stickers, text & custom frames</span>
+
+        <!-- Studio Tab Content Panels -->
+        <div class="studio-tab-panels">
+          <!-- PANEL 1: FRAME BACKGROUND & PHOTO BORDERS -->
+          <div id="tab-frame" class="studio-tab-panel active">
+            <!-- Frame Tone & Badge -->
+            <div class="panel-header-row">
+              <span class="panel-label">Frame Tone</span>
+              <span id="kiosk-frame-color-badge" class="frame-hex-badge">
+                <span class="badge-dot" style="background: #ffffff"></span>
+                <span id="kiosk-frame-color-text">Pure White (#FFFFFF)</span>
+              </span>
+            </div>
+            <div class="color-palette" id="frame-color-palette">
+              <!-- Classic & Modern Neutral -->
+              <button class="color-dot active" data-color="#ffffff" data-name="Pure White" style="background: #ffffff"
+                title="Pure White"></button>
+              <button class="color-dot" data-color="#1a1a1a" data-name="Noir Black" style="background: #1a1a1a"
+                title="Noir Black"></button>
+
+              <!-- Girly & Cute Pastels -->
+              <button class="color-dot" data-color="#ffd1dc" data-name="Baby Pink" style="background: #ffd1dc"
+                title="Baby Pink"></button>
+              <button class="color-dot" data-color="#ffb6c1" data-name="Soft Rose" style="background: #ffb6c1"
+                title="Soft Rose"></button>
+              <button class="color-dot" data-color="#ff69b4" data-name="Hot Pink" style="background: #ff69b4"
+                title="Hot Pink"></button>
+              <button class="color-dot" data-color="#e2d4f0" data-name="Pastel Lavender" style="background: #e2d4f0"
+                title="Pastel Lavender"></button>
+              <button class="color-dot" data-color="#d8b4fe" data-name="Lilac Dreams" style="background: #d8b4fe"
+                title="Lilac Dreams"></button>
+
+              <!-- Trendy Aesthetic Tones -->
+              <button class="color-dot" data-color="#b4f8c8" data-name="Matcha Mint" style="background: #b4f8c8"
+                title="Matcha Mint"></button>
+              <button class="color-dot" data-color="#fbe7c6" data-name="Warm Butter" style="background: #fbe7c6"
+                title="Warm Butter"></button>
+              <button class="color-dot" data-color="#a0c4ff" data-name="Baby Blue" style="background: #a0c4ff"
+                title="Baby Blue"></button>
+              <button class="color-dot" data-color="#3d6b4f" data-name="Sage Green" style="background: #3d6b4f"
+                title="Sage Green"></button>
+              <button class="color-dot" data-color="#c96b4a" data-name="Terracotta Coral" style="background: #c96b4a"
+                title="Terracotta Coral"></button>
+              <button class="color-dot" data-color="#c9a84c" data-name="Vintage Gold" style="background: #c9a84c"
+                title="Vintage Gold"></button>
+
+              <!-- Custom Color Picker -->
+              <div class="custom-color-picker-wrap msword-color-picker-container"
+                id="kiosk-frame-custom-picker-container" style="position: relative;">
+                <button type="button" id="btn-kiosk-frame-custom-toggle" class="custom-color-btn"
+                  title="Custom Frame Color">
+                  🎨Custom
+                </button>
+
+                <!-- MS Word Palette Dropdown -->
+                <div id="kiosk-frame-msword-palette-dropdown" class="msword-palette-dropdown"
+                  style="display: none; bottom: auto; top: calc(100% + 4px); left: auto; right: 0;">
+                  <div class="msword-section-title">Theme Colors</div>
+                  <div class="msword-theme-wrap">
+                    <div class="msword-theme-top-row" id="kiosk-frame-msword-theme-top-row"></div>
+                    <div class="msword-theme-shades-grid" id="kiosk-frame-msword-theme-shades-grid"></div>
+                  </div>
+                  <div class="msword-divider"></div>
+                  <div class="msword-section-title">Standard Colors</div>
+                  <div class="msword-standard-grid" id="kiosk-frame-msword-standard-grid"></div>
+                  <div class="msword-divider"></div>
+                  <label class="msword-more-colors-btn" title="Choose any custom color">
+                    <span><u>M</u>ore Colors...</span>
+                    <input type="color" id="kiosk-frame-msword-custom-color" class="msword-custom-color-input"
+                      value="#ffffff"
+                      style="opacity: 0; width: 0; height: 0; position: absolute; pointer-events: none;" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Photo Accent Border Selector -->
+            <div class="frame-sub-section">
+              <div class="panel-header-row">
+                <span class="panel-label">Photo Accent Border</span>
+                <span class="panel-sub-label">Inner photo matting</span>
+              </div>
+              <div class="frame-accent-group" id="kiosk-photo-border-options">
+                <button type="button" class="frame-accent-btn active" data-border="none">
+                  <span class="accent-btn-label">Clean Cut</span>
+                </button>
+                <button type="button" class="frame-accent-btn" data-border="white">
+                  <span class="accent-btn-label">Polaroid White</span>
+                </button>
+                <button type="button" class="frame-accent-btn" data-border="dark">
+                  <span class="accent-btn-label">Film Noir</span>
+                </button>
+                <button type="button" class="frame-accent-btn" data-border="double">
+                  <span class="accent-btn-label">Vintage Double</span>
+                </button>
+                <button type="button" class="frame-accent-btn" data-border="gold">
+                  <span class="accent-btn-label">Gold Trim</span>
+                </button>
               </div>
             </div>
           </div>
 
-
-          <!-- Studio Tab Content Panels -->
-          <div class="studio-tab-panels">
-            <!-- PANEL 1: FRAME BACKGROUND & PHOTO BORDERS -->
-            <div id="tab-frame" class="studio-tab-panel active">
-              <!-- Frame Tone & Badge -->
-              <div class="panel-header-row">
-                <span class="panel-label">Frame Tone</span>
-                <span id="kiosk-frame-color-badge" class="frame-hex-badge">
-                  <span class="badge-dot" style="background: #ffffff"></span>
-                  <span id="kiosk-frame-color-text">Pure White (#FFFFFF)</span>
-                </span>
-              </div>
-              <div class="color-palette" id="frame-color-palette">
-                <!-- Classic & Modern Neutral -->
-                <button class="color-dot active" data-color="#ffffff" data-name="Pure White" style="background: #ffffff" title="Pure White"></button>
-                <button class="color-dot" data-color="#1a1a1a" data-name="Noir Black" style="background: #1a1a1a" title="Noir Black"></button>
-
-                <!-- Girly & Cute Pastels -->
-                <button class="color-dot" data-color="#ffd1dc" data-name="Baby Pink" style="background: #ffd1dc" title="Baby Pink"></button>
-                <button class="color-dot" data-color="#ffb6c1" data-name="Soft Rose" style="background: #ffb6c1" title="Soft Rose"></button>
-                <button class="color-dot" data-color="#ff69b4" data-name="Hot Pink" style="background: #ff69b4" title="Hot Pink"></button>
-                <button class="color-dot" data-color="#e2d4f0" data-name="Pastel Lavender" style="background: #e2d4f0" title="Pastel Lavender"></button>
-                <button class="color-dot" data-color="#d8b4fe" data-name="Lilac Dreams" style="background: #d8b4fe" title="Lilac Dreams"></button>
-
-                <!-- Trendy Aesthetic Tones -->
-                <button class="color-dot" data-color="#b4f8c8" data-name="Matcha Mint" style="background: #b4f8c8" title="Matcha Mint"></button>
-                <button class="color-dot" data-color="#fbe7c6" data-name="Warm Butter" style="background: #fbe7c6" title="Warm Butter"></button>
-                <button class="color-dot" data-color="#a0c4ff" data-name="Baby Blue" style="background: #a0c4ff" title="Baby Blue"></button>
-                <button class="color-dot" data-color="#3d6b4f" data-name="Sage Green" style="background: #3d6b4f" title="Sage Green"></button>
-                <button class="color-dot" data-color="#c96b4a" data-name="Terracotta Coral" style="background: #c96b4a" title="Terracotta Coral"></button>
-                <button class="color-dot" data-color="#c9a84c" data-name="Vintage Gold" style="background: #c9a84c" title="Vintage Gold"></button>
-
-                <!-- Custom Color Picker -->
-                <div class="custom-color-picker-wrap msword-color-picker-container" id="kiosk-frame-custom-picker-container" style="position: relative;">
-                  <button type="button" id="btn-kiosk-frame-custom-toggle" class="custom-color-btn" title="Custom Frame Color">
-                    🎨 Custom
-                  </button>
-                  
-                  <!-- MS Word Palette Dropdown -->
-                  <div id="kiosk-frame-msword-palette-dropdown" class="msword-palette-dropdown" style="display: none; bottom: auto; top: calc(100% + 4px); left: auto; right: 0;">
-                    <div class="msword-section-title">Theme Colors</div>
-                    <div class="msword-theme-wrap">
-                      <div class="msword-theme-top-row" id="kiosk-frame-msword-theme-top-row"></div>
-                      <div class="msword-theme-shades-grid" id="kiosk-frame-msword-theme-shades-grid"></div>
-                    </div>
-                    <div class="msword-divider"></div>
-                    <div class="msword-section-title">Standard Colors</div>
-                    <div class="msword-standard-grid" id="kiosk-frame-msword-standard-grid"></div>
-                    <div class="msword-divider"></div>
-                    <label class="msword-more-colors-btn" title="Choose any custom color">
-                      <span class="msword-wheel-icon">🎨</span>
-                      <span><u>M</u>ore Colors...</span>
-                      <input type="color" id="kiosk-frame-msword-custom-color" class="msword-custom-color-input" value="#ffffff" style="opacity: 0; width: 0; height: 0; position: absolute; pointer-events: none;" />
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Photo Accent Border Selector -->
-              <div class="frame-sub-section">
-                <div class="panel-header-row">
-                  <span class="panel-label">Photo Accent Border</span>
-                  <span class="panel-sub-label">Inner photo matting</span>
-                </div>
-                <div class="frame-accent-group" id="kiosk-photo-border-options">
-                  <button type="button" class="frame-accent-btn active" data-border="none">
-                    <span class="accent-btn-label">Clean Cut</span>
-                  </button>
-                  <button type="button" class="frame-accent-btn" data-border="white">
-                    <span class="accent-btn-label">Polaroid White</span>
-                  </button>
-                  <button type="button" class="frame-accent-btn" data-border="dark">
-                    <span class="accent-btn-label">Film Noir</span>
-                  </button>
-                  <button type="button" class="frame-accent-btn" data-border="double">
-                    <span class="accent-btn-label">Vintage Double</span>
-                  </button>
-                  <button type="button" class="frame-accent-btn" data-border="gold">
-                    <span class="accent-btn-label">Gold Trim</span>
-                  </button>
-                </div>
-              </div>
+          <!-- PANEL 2: KAWAII STICKERS -->
+          <div id="tab-stickers" class="studio-tab-panel">
+            <div class="panel-header-row">
+              <span class="panel-label">Tap sticker to add on photostrip</span>
+              <button type="button" id="btn-kiosk-clear-stickers" class="kiosk-link-btn" style="display: none;">Clear
+                All</button>
             </div>
 
-            <!-- PANEL 2: KAWAII STICKERS -->
-            <div id="tab-stickers" class="studio-tab-panel">
-              <div class="panel-header-row">
-                <span class="panel-label">🐾 Tap sticker to add on photostrip</span>
-                <button type="button" id="btn-kiosk-clear-stickers" class="kiosk-link-btn" style="display: none;">Clear All</button>
-              </div>
-              
-              <!-- Stickers Tray -->
-              <div class="kiosk-stickers-tray" id="kiosk-stickers-tray"></div>
+            <!-- Stickers Tray -->
+            <div class="kiosk-stickers-tray" id="kiosk-stickers-tray"></div>
 
-              <!-- Selected Sticker Micro-Actions -->
-              <div id="kiosk-selected-sticker-controls" class="kiosk-sticker-controls" style="display: none;">
-                <div class="kiosk-sticker-header">
-                  <span id="kiosk-selected-sticker-name">Sticker Selected</span>
-                  <span class="kiosk-handle-tip">Direct handles on photo</span>
-                </div>
-                <div class="kiosk-sticker-actions-row">
-                  <button type="button" id="btn-kiosk-rotate-left" class="kiosk-mini-btn" title="Rotate Left">↺ -15°</button>
-                  <button type="button" id="btn-kiosk-rotate-right" class="kiosk-mini-btn" title="Rotate Right">↻ +15°</button>
-                  <button type="button" id="btn-kiosk-scale-down" class="kiosk-mini-btn" title="Smaller">➖ Smaller</button>
-                  <button type="button" id="btn-kiosk-scale-up" class="kiosk-mini-btn" title="Bigger">➕ Bigger</button>
-                  <button type="button" id="btn-kiosk-flip-sticker" class="kiosk-mini-btn" title="Flip">⇄ Flip</button>
-                  <button type="button" id="btn-kiosk-delete-sticker" class="kiosk-mini-btn btn-danger" title="Remove">🗑️ Remove</button>
-                </div>
+            <!-- Selected Sticker Micro-Actions -->
+            <div id="kiosk-selected-sticker-controls" class="kiosk-sticker-controls" style="display: none;">
+              <div class="kiosk-sticker-header">
+                <span id="kiosk-selected-sticker-name">Sticker Selected</span>
+                <span class="kiosk-handle-tip">Direct handles on photo</span>
+              </div>
+              <div class="kiosk-sticker-actions-row">
+                <button type="button" id="btn-kiosk-rotate-left" class="kiosk-mini-btn" title="Rotate Left">↺
+                  -15°</button>
+                <button type="button" id="btn-kiosk-rotate-right" class="kiosk-mini-btn" title="Rotate Right">↻
+                  +15°</button>
+                <button type="button" id="btn-kiosk-scale-down" class="kiosk-mini-btn" title="Smaller">➖
+                  Smaller</button>
+                <button type="button" id="btn-kiosk-scale-up" class="kiosk-mini-btn" title="Bigger">➕ Bigger</button>
+                <button type="button" id="btn-kiosk-flip-sticker" class="kiosk-mini-btn" title="Flip">⇄ Flip</button>
+                <button type="button" id="btn-kiosk-delete-sticker" class="kiosk-mini-btn btn-danger" title="Remove">🗑️
+                  Remove</button>
               </div>
             </div>
+          </div>
 
-            <!-- PANEL 3: TEXT OVERLAY -->
-            <div id="tab-text" class="studio-tab-panel">
-              <div class="panel-header-row">
-                <span class="panel-label">✍️ Add Message or Quote</span>
-              </div>
-              
-              <div class="kiosk-text-form">
-                <input type="text" id="kiosk-overlay-text" class="kiosk-text-input" placeholder="Type text here... (e.g. Memories & Moments ✨)">
+          <!-- PANEL 3: TEXT OVERLAY -->
+          <div id="tab-text" class="studio-tab-panel">
+            <div class="panel-header-row">
+              <span class="panel-label">Add Message or Quote</span>
+            </div>
 
-                <div class="kiosk-text-row-dual">
-                  <div class="kiosk-field-wrap">
-                    <label class="kiosk-field-label">Font Style</label>
-                    <select id="kiosk-font-family" class="kiosk-font-select">
-                      <option value="Courier Prime" style="font-family: 'Courier Prime', monospace;" selected>Typewriter (Default)</option>
-                      <option value="Special Elite" style="font-family: 'Special Elite', cursive;">Vintage Typewriter</option>
-                      <option value="Brittany" style="font-family: 'Brittany', cursive;">Brittany Signature</option>
-                      <option value="Great Vibes" style="font-family: 'Great Vibes', cursive;">Luxury Signature</option>
-                      <option value="Dancing Script" style="font-family: 'Dancing Script', cursive;">Casual Signature</option>
-                      <option value="Alex Brush" style="font-family: 'Alex Brush', cursive;">Elegant Script</option>
-                      <option value="Sacramento" style="font-family: 'Sacramento', cursive;">Fine Monoline</option>
-                      <option value="Cascadia Code" style="font-family: 'Cascadia Code', monospace;">Cascadia Code</option>
-                      <option value="Playfair Display" style="font-family: 'Playfair Display', serif;">Editorial Serif</option>
-                      <option value="Cinzel" style="font-family: 'Cinzel', serif;">Classical Roman</option>
-                      <option value="Caveat" style="font-family: 'Caveat', cursive;">Aesthetic Handwritten</option>
-                      <option value="Pacifico" style="font-family: 'Pacifico', cursive;">Retro Script</option>
-                      <option value="Montserrat" style="font-family: 'Montserrat', sans-serif;">Modern Bold</option>
-                      <option value="Outfit" style="font-family: 'Outfit', sans-serif;">Clean Aesthetic</option>
-                    </select>
-                  </div>
+            <div class="kiosk-text-form">
+              <input type="text" id="kiosk-overlay-text" class="kiosk-text-input"
+                placeholder="Type text here... (e.g. Memories & Moments )">
 
-                  <div class="kiosk-field-wrap">
-                    <label class="kiosk-field-label">Font Color</label>
-                    <!-- MS Word Font Color Picker -->
-                    <div class="msword-color-picker-container" id="kiosk-msword-color-picker-container">
-                      <button type="button" id="btn-kiosk-msword-color-toggle" class="msword-color-toggle-btn" title="MS Word Font Color">
-                        <div class="msword-a-wrap">
-                          <span class="msword-a-letter">A</span>
-                          <span class="msword-color-bar" id="kiosk-msword-active-color-bar" style="background-color: #000000;"></span>
-                        </div>
-                        <span class="msword-color-label" id="kiosk-msword-color-name">Black</span>
-                        <span class="msword-arrow">▼</span>
-                      </button>
-                      
-                      <!-- MS Word Palette Dropdown -->
-                      <div id="kiosk-msword-palette-dropdown" class="msword-palette-dropdown" style="display: none;">
-                        <div class="msword-section-title">Theme Colors</div>
-                        <div class="msword-theme-wrap">
-                          <div class="msword-theme-top-row" id="kiosk-msword-theme-top-row"></div>
-                          <div class="msword-theme-shades-grid" id="kiosk-msword-theme-shades-grid"></div>
-                        </div>
-                        <div class="msword-divider"></div>
-                        <div class="msword-section-title">Standard Colors</div>
-                        <div class="msword-standard-grid" id="kiosk-msword-standard-grid"></div>
-                        <div class="msword-divider"></div>
-                        <label class="msword-more-colors-btn" title="Choose any custom color">
-                          <span class="msword-wheel-icon">🎨</span>
-                          <span><u>M</u>ore Colors...</span>
-                          <input type="color" id="kiosk-msword-custom-color-input" value="#000000" style="opacity: 0; width: 0; height: 0; position: absolute; pointer-events: none;" />
-                        </label>
+              <div class="kiosk-text-row-dual">
+                <div class="kiosk-field-wrap">
+                  <label class="kiosk-field-label">Font Style</label>
+                  <select id="kiosk-font-family" class="kiosk-font-select">
+                    <option value="Courier Prime" style="font-family: 'Courier Prime', monospace;" selected>Typewriter
+                      (Default)</option>
+                    <option value="Special Elite" style="font-family: 'Special Elite', cursive;">Vintage Typewriter
+                    </option>
+                    <option value="Brittany" style="font-family: 'Brittany', cursive;">Brittany Signature</option>
+                    <option value="Great Vibes" style="font-family: 'Great Vibes', cursive;">Luxury Signature</option>
+                    <option value="Dancing Script" style="font-family: 'Dancing Script', cursive;">Casual Signature
+                    </option>
+                    <option value="Alex Brush" style="font-family: 'Alex Brush', cursive;">Elegant Script</option>
+                    <option value="Sacramento" style="font-family: 'Sacramento', cursive;">Fine Monoline</option>
+                    <option value="Cascadia Code" style="font-family: 'Cascadia Code', monospace;">Cascadia Code
+                    </option>
+                    <option value="Playfair Display" style="font-family: 'Playfair Display', serif;">Editorial Serif
+                    </option>
+                    <option value="Cinzel" style="font-family: 'Cinzel', serif;">Classical Roman</option>
+                    <option value="Caveat" style="font-family: 'Caveat', cursive;">Aesthetic Handwritten</option>
+                    <option value="Pacifico" style="font-family: 'Pacifico', cursive;">Retro Script</option>
+                    <option value="Montserrat" style="font-family: 'Montserrat', sans-serif;">Modern Bold</option>
+                    <option value="Outfit" style="font-family: 'Outfit', sans-serif;">Clean Aesthetic</option>
+                  </select>
+                </div>
+
+                <div class="kiosk-field-wrap">
+                  <label class="kiosk-field-label">Font Color</label>
+                  <!-- MS Word Font Color Picker -->
+                  <div class="msword-color-picker-container" id="kiosk-msword-color-picker-container">
+                    <button type="button" id="btn-kiosk-msword-color-toggle" class="msword-color-toggle-btn"
+                      title="MS Word Font Color">
+                      <div class="msword-a-wrap">
+                        <span class="msword-a-letter">A</span>
+                        <span class="msword-color-bar" id="kiosk-msword-active-color-bar"
+                          style="background-color: #000000;"></span>
                       </div>
+                      <span class="msword-color-label" id="kiosk-msword-color-name">Black</span>
+                      <span class="msword-arrow">▼</span>
+                    </button>
+
+                    <!-- MS Word Palette Dropdown -->
+                    <div id="kiosk-msword-palette-dropdown" class="msword-palette-dropdown" style="display: none;">
+                      <div class="msword-section-title">Theme Colors</div>
+                      <div class="msword-theme-wrap">
+                        <div class="msword-theme-top-row" id="kiosk-msword-theme-top-row"></div>
+                        <div class="msword-theme-shades-grid" id="kiosk-msword-theme-shades-grid"></div>
+                      </div>
+                      <div class="msword-divider"></div>
+                      <div class="msword-section-title">Standard Colors</div>
+                      <div class="msword-standard-grid" id="kiosk-msword-standard-grid"></div>
+                      <div class="msword-divider"></div>
+                      <label class="msword-more-colors-btn" title="Choose any custom color">
+                        <span class="msword-wheel-icon"></span>
+                        <span><u>M</u>ore Colors...</span>
+                        <input type="color" id="kiosk-msword-custom-color-input" value="#000000"
+                          style="opacity: 0; width: 0; height: 0; position: absolute; pointer-events: none;" />
+                      </label>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <!-- Text Style Row: Size Slider + B/I/U buttons + Action Buttons -->
-                <div class="kiosk-text-styling-bar">
-                  <div class="kiosk-size-slider-wrap">
-                    <div class="slider-label-row">
-                      <span>Size</span>
-                      <span id="kiosk-val-font-size" class="size-badge">90px</span>
-                    </div>
-                    <input type="range" id="kiosk-slider-font-size" min="24" max="220" value="90">
+              <!-- Text Style Row: Size Slider + B/I/U buttons + Action Buttons -->
+              <div class="kiosk-text-styling-bar">
+                <div class="kiosk-size-slider-wrap">
+                  <div class="slider-label-row">
+                    <span>Size</span>
+                    <span id="kiosk-val-font-size" class="size-badge">90px</span>
                   </div>
+                  <input type="range" id="kiosk-slider-font-size" min="24" max="220" value="90">
+                </div>
 
-                  <div class="kiosk-biu-group">
-                    <button type="button" id="btn-kiosk-text-bold" class="kiosk-style-btn" title="Bold">B</button>
-                    <button type="button" id="btn-kiosk-text-italic" class="kiosk-style-btn" title="Italic">I</button>
-                    <button type="button" id="btn-kiosk-text-underline" class="kiosk-style-btn" title="Underline">U</button>
-                  </div>
+                <div class="kiosk-biu-group">
+                  <button type="button" id="btn-kiosk-text-bold" class="kiosk-style-btn" title="Bold">B</button>
+                  <button type="button" id="btn-kiosk-text-italic" class="kiosk-style-btn" title="Italic">I</button>
+                  <button type="button" id="btn-kiosk-text-underline" class="kiosk-style-btn"
+                    title="Underline">U</button>
+                </div>
 
-                  <div class="kiosk-text-action-btns">
-                    <button type="button" id="btn-kiosk-apply-text" class="kiosk-text-btn btn-apply">Apply</button>
-                    <button type="button" id="btn-kiosk-clear-text" class="kiosk-text-btn btn-clear">Clear</button>
-                  </div>
+                <div class="kiosk-text-action-btns">
+                  <button type="button" id="btn-kiosk-apply-text" class="kiosk-text-btn btn-apply">Apply</button>
+                  <button type="button" id="btn-kiosk-clear-text" class="kiosk-text-btn btn-clear">Clear</button>
                 </div>
               </div>
             </div>
           </div>
-
-          <div class="review-actions-compact">
-            <button id="btn-save-customization" class="big-btn btn-save-prominent" tabindex="0">
-              Saved
-            </button>
-            <div style="width: 100%; border-top: 1.5px solid rgba(110, 22, 60, 0.08); margin: 0.2rem 0;"></div>
-            <button id="btn-take-more" class="big-btn btn-retake-prominent" tabindex="0">
-              Back to Camera — Take More Photos
-            </button>
-          </div>
         </div>
 
-        <!-- Rightmost: Korea Day 2026 Special Stickers -->
-        <div class="review-korea" style="background: white; border-radius: 12px; display: flex; flex-direction: column; padding: 1.2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-height: 80vh; border: 1.5px solid rgba(255,105,180,0.2);">
-          <div class="kiosk-studio-header" style="margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; padding-bottom: 0.5rem; border-bottom: 1px dashed rgba(255,105,180,0.3);">
-            <div class="kiosk-brand-title" style="text-align: center; gap: 0.2rem;">
-              <div>
-                <h1 class="welcome-title studio-main-title" style="font-size: 1.25rem; margin-bottom: 0.1rem; color: #FF4696;">Korea Day 2026</h1>
-                <span class="studio-subtext" style="font-size: 0.75rem;">Special Edition Stickers</span>
-              </div>
+        <div class="review-actions-compact">
+          <button id="btn-save-customization" class="big-btn btn-save-prominent" tabindex="0">
+            Saved
+          </button>
+          <div style="width: 100%; border-top: 1.5px solid rgba(110, 22, 60, 0.08); margin: 0.2rem 0;"></div>
+          <button id="btn-take-more" class="big-btn btn-retake-prominent" tabindex="0">
+            Back to Camera — Take More Photos
+          </button>
+        </div>
+      </div>
+
+      <!-- Rightmost: Korea Day 2026 Special Stickers -->
+      <div class="review-korea"
+        style="background: white; border-radius: 12px; display: flex; flex-direction: column; padding: 1.2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-height: 80vh; border: 1.5px solid rgba(255,105,180,0.2);">
+        <div class="kiosk-studio-header"
+          style="margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; padding-bottom: 0.5rem; border-bottom: 1px dashed rgba(255,105,180,0.3);">
+          <div class="kiosk-brand-title" style="text-align: center; gap: 0.2rem;">
+            <div>
+              <h1 class="welcome-title studio-main-title"
+                style="font-size: 1.25rem; margin-bottom: 0.1rem; color: #FF4696;">Hangeul Day 2026</h1>
+              <span class="studio-subtext" style="font-size: 0.75rem;">Special Edition Stickers</span>
             </div>
           </div>
-          <div class="panel-header-row" style="margin-bottom: 0.6rem; justify-content: center;">
-            <span class="panel-label" style="font-size: 0.75rem; color: var(--text-secondary);">✨ Tap to add on photostrip</span>
-          </div>
-          <div class="kiosk-stickers-tray" id="kiosk-korea-stickers-tray" style="flex: 1; min-height: 0; background: rgba(255,105,180,0.04); border-color: rgba(255,105,180,0.2); border-radius: 8px;"></div>
+        </div>
+        <div class="panel-header-row" style="margin-bottom: 0.6rem; justify-content: center;">
+          <span class="panel-label" style="font-size: 0.75rem; color: var(--text-secondary);">Tap to add on
+            photostrip</span>
+        </div>
+        <div class="kiosk-stickers-tray" id="kiosk-korea-stickers-tray"
+          style="flex: 1; min-height: 0; background: rgba(255,105,180,0.04); border-color: rgba(255,105,180,0.2); border-radius: 8px;">
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- SESSION COMPLETE -->
-    <div id="screen-thank-you" class="screen hidden thank-you-screen">
-      <div class="thank-you-content">
-        <h1 class="welcome-title">Thank You!</h1>
-        <img
-          src="/static/logo.png"
-          alt="Chini Champra Creations"
-          class="thank-you-logo"
-        />
+  <!-- SESSION COMPLETE -->
+  <div id="screen-thank-you" class="screen hidden thank-you-screen">
+    <div class="thank-you-content">
+      <h1 class="welcome-title">Thank You!</h1>
+      <img src="/static/logo.png" alt="Chini Champra Creations" class="thank-you-logo" />
 
-        <p id="thank-you-message" class="thank-you-message">
-          Thank you for creating great memories with Chini Champra Creations.
-        </p>
-        <button id="btn-return-welcome" class="big-btn btn-go" type="button">
-          Return to Welcome <kbd class="key-badge">Enter ↵</kbd>
+      <p id="thank-you-message" class="thank-you-message">
+        Thank you for creating great memories with Chini Champra Creations.
+      </p>
+      <button id="btn-return-welcome" class="big-btn btn-go" type="button">
+        Return to Welcome <kbd class="key-badge">Enter ↵</kbd>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN 6: GALLERY -->
+  <div id="screen-gallery" class="screen hidden">
+    <div class="gallery-shell">
+      <div class="gallery-header">
+        <button id="btn-gallery-back" class="gallery-back-btn">
+          ← Back to Capture <kbd class="key-badge">Esc</kbd>
+        </button>
+        <div class="gallery-heading">
+          <h1 class="welcome-title">All Photos</h1>
+          <p class="welcome-sub">Browse your recent sessions</p>
+        </div>
+      </div>
+
+      <div class="gallery-content">
+        <div id="gallery-sessions-container" class="gallery-sessions"></div>
+        <div id="gallery-empty" class="hidden gallery-empty-state">
+          <div style="font-size: 5rem">📭</div>
+          <p>No photos yet!<br />Take your first session.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX MODAL -->
+  <div id="lightbox-modal" class="lightbox hidden">
+    <div class="lightbox-content">
+      <button id="btn-lightbox-close" class="lightbox-close" aria-label="Close">
+        ✕
+      </button>
+      <img id="lightbox-img" src="" alt="Expanded View" />
+      <div class="lightbox-actions">
+        <button id="btn-lightbox-edit" class="small-btn btn-save-prominent" title="Edit Photostrip"
+          style="padding: 0.8rem 1.8rem; font-size: 1rem;">
+          Edit Photostrip
+        </button>
+        <button id="btn-lightbox-download" class="small-btn btn-retake-prominent" title="Download"
+          style="padding: 0.8rem 1.8rem; font-size: 1rem;">
+          Download
+        </button>
+        <button id="btn-lightbox-delete" class="small-btn" title="Delete"
+          style="padding: 0.8rem 1.8rem; font-size: 1rem; background: transparent; border: 1.5px solid #dc2626; color: #dc2626; border-radius: 9999px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;"
+          onmouseover="this.style.background='#dc2626';this.style.color='#fff'"
+          onmouseout="this.style.background='transparent';this.style.color='#dc2626'">
+          Delete
         </button>
       </div>
     </div>
+  </div>
 
-    <!-- SCREEN 6: GALLERY -->
-    <div id="screen-gallery" class="screen hidden">
-      <div class="gallery-shell">
-        <div class="gallery-header">
-          <button id="btn-gallery-back" class="gallery-back-btn">
-            ← Back to Capture <kbd class="key-badge">Esc</kbd>
-          </button>
-          <div class="gallery-heading">
-            <h1 class="welcome-title">All Photos</h1>
-            <p class="welcome-sub">Browse your recent sessions</p>
-          </div>
-        </div>
+  <!-- Persistent logo watermark -->
+  <div class="corner-logo">
+    <img src="/static/logo.png" alt="Logo" />
+  </div>
+  <div class="site-credit">© krish_korou</div>
 
-        <div class="gallery-content">
-          <div id="gallery-sessions-container" class="gallery-sessions"></div>
-          <div id="gallery-empty" class="hidden gallery-empty-state">
-            <div style="font-size: 5rem">📭</div>
-            <p>No photos yet!<br />Take your first session.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+  <script src="/static/js/kiosk.js?v=23"></script>
+</body>
 
-    <!-- LIGHTBOX MODAL -->
-    <div id="lightbox-modal" class="lightbox hidden">
-      <div class="lightbox-content">
-        <button
-          id="btn-lightbox-close"
-          class="lightbox-close"
-          aria-label="Close"
-        >
-          ✕
-        </button>
-        <img id="lightbox-img" src="" alt="Expanded View" />
-        <div class="lightbox-actions">
-          <button
-            id="btn-lightbox-edit"
-            class="small-btn btn-save-prominent"
-            title="Edit Photostrip"
-            style="padding: 0.8rem 1.8rem; font-size: 1rem;"
-          >
-            Edit Photostrip
-          </button>
-          <button
-            id="btn-lightbox-download"
-            class="small-btn btn-retake-prominent"
-            title="Download"
-            style="padding: 0.8rem 1.8rem; font-size: 1rem;"
-          >
-            Download
-          </button>
-          <button
-            id="btn-lightbox-delete"
-            class="small-btn"
-            title="Delete"
-            style="padding: 0.8rem 1.8rem; font-size: 1rem; background: transparent; border: 1.5px solid #dc2626; color: #dc2626; border-radius: 9999px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;"
-            onmouseover="this.style.background='#dc2626';this.style.color='#fff'"
-            onmouseout="this.style.background='transparent';this.style.color='#dc2626'"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <script src="/static/js/kiosk.js?v=23"></script>
-  </body>
 </html>

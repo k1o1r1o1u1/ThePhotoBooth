@@ -506,6 +506,12 @@ document.addEventListener('DOMContentLoaded', () => {
       thumbsBar.appendChild(slot);
     }
 
+    // Reset progress counter & dots
+    const progressCount = document.getElementById('capture-progress-count');
+    if (progressCount) progressCount.textContent = `0 / ${TARGET_PHOTO_COUNT}`;
+    const progressDots = document.querySelectorAll('#capture-progress-dots .dot');
+    progressDots.forEach(d => d.classList.remove('active'));
+
     // Make sure capture button is enabled
     if (btnCapture) {
       btnCapture.disabled = false;
@@ -710,6 +716,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function fillSlot(idx, previewUrl) {
     const slot = document.getElementById(`thumb-slot-${idx}`);
     if (slot) slot.style.backgroundImage = `url(${previewUrl})`;
+
+    // Update progress counter & dots
+    const taken = idx + 1;
+    const progressCount = document.getElementById('capture-progress-count');
+    if (progressCount) progressCount.textContent = `${taken} / ${TARGET_PHOTO_COUNT}`;
+    const dots = document.querySelectorAll('#capture-progress-dots .dot');
+    if (dots[idx]) dots[idx].classList.add('active');
   }
 
   async function uploadCapturedImage(imageBlob, captureIndex) {
@@ -1249,7 +1262,7 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
   }
 
   // Save State Watcher
-  function updateSaveCustomizationState() {
+  function updateSaveCustomizationState(isHistoryRestore = false) {
     if (!btnSaveCustomization) return;
     const hasUnsavedFrameChange = selectedFrameColor !== savedFrameColor;
     const hasActiveStickers = kioskCustomStickers.length > 0;
@@ -1257,6 +1270,9 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
     const isUnsaved = hasUnsavedFrameChange || hasActiveStickers || hasActiveText || hasUnsavedCustomization;
     btnSaveCustomization.disabled = !isUnsaved;
     btnSaveCustomization.innerHTML = isUnsaved ? 'Save Your Edits' : 'Saved ✓';
+    if (!isHistoryRestore && typeof debouncedPushHistory === 'function') {
+      debouncedPushHistory();
+    }
   }
 
   // Color dots click events (Frame Color)
@@ -2889,5 +2905,151 @@ if(kioskCtx) { kioskCtx.imageSmoothingEnabled = true; kioskCtx.imageSmoothingQua
       oscillator.stop(audioCtx.currentTime + 0.1);
     } catch (e) { }
   }
+
+  // =========================================================================
+  // UNDO / REDO LOGIC
+  // =========================================================================
+  let editHistory = [];
+  let editHistoryIndex = -1;
+  let isRestoringHistory = false;
+  let historyDebounceTimer = null;
+
+  function cloneCurrentKioskState() {
+    return {
+      frameColor: selectedFrameColor,
+      photoBorder: selectedPhotoBorderStyle,
+      photoRadius: selectedPhotoRadius,
+      stickers: kioskCustomStickers.map(s => ({...s})),
+      textOverlay: kioskTextOverlay,
+      textX: kioskTextX,
+      textY: kioskTextY,
+      textRotation: kioskTextRotation,
+      fontSize: kioskFontSize,
+      isBold: kioskIsBold,
+      isItalic: kioskIsItalic,
+      isUnderline: kioskIsUnderline,
+      fontFamily: kioskFontFamily,
+      fontColor: kioskFontColor
+    };
+  }
+
+  function pushKioskHistory() {
+    if (isRestoringHistory) return;
+    const state = cloneCurrentKioskState();
+    if (editHistoryIndex < editHistory.length - 1) {
+      editHistory = editHistory.slice(0, editHistoryIndex + 1);
+    }
+    editHistory.push(state);
+    if (editHistory.length > 50) editHistory.shift();
+    else editHistoryIndex++;
+    updateUndoRedoUI();
+  }
+
+  // Globally accessible so updateSaveCustomizationState can call it
+  window.debouncedPushHistory = function() {
+    clearTimeout(historyDebounceTimer);
+    historyDebounceTimer = setTimeout(pushKioskHistory, 300);
+  };
+
+  function restoreKioskHistory(index) {
+    if (index < 0 || index >= editHistory.length) return;
+    isRestoringHistory = true;
+    editHistoryIndex = index;
+    const state = editHistory[index];
+    
+    selectedFrameColor = state.frameColor;
+    selectedPhotoBorderStyle = state.photoBorder;
+    selectedPhotoRadius = state.photoRadius;
+    kioskCustomStickers = state.stickers.map(s => ({...s}));
+    kioskSelectedSticker = null;
+    kioskIsTextSelected = false;
+
+    kioskTextOverlay = state.textOverlay;
+    kioskTextX = state.textX;
+    kioskTextY = state.textY;
+    kioskTextRotation = state.textRotation;
+    kioskFontSize = state.fontSize;
+    kioskIsBold = state.isBold;
+    kioskIsItalic = state.isItalic;
+    kioskIsUnderline = state.isUnderline;
+    kioskFontFamily = state.fontFamily;
+    kioskFontColor = state.fontColor;
+
+    // sync UI
+    updateFrameColorBadge(selectedFrameColor);
+    document.querySelectorAll('#kiosk-photo-border-options .frame-accent-btn').forEach(b => {
+      if(b.dataset.border === selectedPhotoBorderStyle) {
+        b.classList.add('active');
+      } else {
+        b.classList.remove('active');
+      }
+    });
+    
+    const txtInput = document.getElementById('kiosk-overlay-text');
+    if (txtInput) txtInput.value = kioskTextOverlay;
+    
+    const fontSelect = document.getElementById('kiosk-font-family');
+    if (fontSelect) fontSelect.value = kioskFontFamily;
+    
+    const btnBold = document.getElementById('btn-kiosk-text-bold');
+    if (btnBold) btnBold.classList.toggle('active', kioskIsBold);
+    
+    const btnItalic = document.getElementById('btn-kiosk-text-italic');
+    if (btnItalic) btnItalic.classList.toggle('active', kioskIsItalic);
+    
+    const btnUnderline = document.getElementById('btn-kiosk-text-underline');
+    if (btnUnderline) btnUnderline.classList.toggle('active', kioskIsUnderline);
+    
+    const slider = document.getElementById('kiosk-slider-font-size');
+    if (slider) slider.value = kioskFontSize;
+    const valFontSize = document.getElementById('kiosk-val-font-size');
+    if (valFontSize) valFontSize.textContent = kioskFontSize + 'px';
+    
+    updateKioskStickerControlsUI();
+    updateSaveCustomizationState(true);
+    scheduleKioskPreviewDraw();
+    updateUndoRedoUI();
+    isRestoringHistory = false;
+  }
+
+  function updateUndoRedoUI() {
+    const btnUndo = document.getElementById('btn-kiosk-undo');
+    const btnRedo = document.getElementById('btn-kiosk-redo');
+    if (btnUndo) btnUndo.disabled = editHistoryIndex <= 0;
+    if (btnRedo) btnRedo.disabled = editHistoryIndex >= editHistory.length - 1;
+  }
+
+  const btnUndo = document.getElementById('btn-kiosk-undo');
+  if (btnUndo) btnUndo.addEventListener('click', () => restoreKioskHistory(editHistoryIndex - 1));
+  
+  const btnRedo = document.getElementById('btn-kiosk-redo');
+  if (btnRedo) btnRedo.addEventListener('click', () => restoreKioskHistory(editHistoryIndex + 1));
+  
+  document.addEventListener('keydown', (e) => {
+    const reviewScreen = document.getElementById('screen-review');
+    if (!reviewScreen || reviewScreen.classList.contains('hidden')) return;
+    if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      restoreKioskHistory(editHistoryIndex - 1);
+    } else if (e.ctrlKey && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+      e.preventDefault();
+      restoreKioskHistory(editHistoryIndex + 1);
+    }
+  });
+  
+  // Capture initial state on open
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        const reviewScreen = document.getElementById('screen-review');
+        if (reviewScreen && !reviewScreen.classList.contains('hidden') && editHistory.length === 0) {
+           pushKioskHistory();
+        }
+      }
+    });
+  });
+  const screenRev = document.getElementById('screen-review');
+  if (screenRev) observer.observe(screenRev, { attributes: true });
+
 });
 document.addEventListener('contextmenu', event => event.preventDefault());
